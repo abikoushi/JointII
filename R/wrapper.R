@@ -25,6 +25,7 @@ jointecdf_dic_em <- function(LE, RE, LS, RS, maxit=1000L, tol=1e-5){
   #the index is 0-origin in cpp
   res <- with(RANK, joint_DIC_em(LE-1L, RE-1L, LS-1L, RS-1L, 
                       m = length(breaks), maxit = maxit, tol = tol))
+  res$logprob <- res$logprob[-1]
   res$breaks <- breaks
   return(res)
 }

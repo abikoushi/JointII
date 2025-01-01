@@ -29,86 +29,62 @@ void Aup(arma::mat & A, const arma::vec & h, const arma::vec & lam,
   }
 }
 
-/*
-void Bup(){
-  
-}
- 
- function bup(le_rank,re_rank,ls_rank,rs_rank,h,lam)
- m = size(lam,1)
- B = UpperTriangular(zeros(m,m))
- rho = zeros(2)
-#convolution
- for i in le_rank:re_rank
- start = max(ls_rank,i+1)
- for j in start:rs_rank
- rho[1] += lam[i]*sum(h[1:(m-(rs_rank-(j-i)))])
- rho[2] += lam[i]*sum(h[(m-(rs_rank-(j-i))+1):end])
- end
- end
- rho ./= sum(rho)
-#expectation
- for i in le_rank:re_rank
- for j in (rs_rank+1):m
- B[i,j] += h[j-i]
- end
- end
- sb = sum(B)
- if sb > 0
- B ./= sb
- B .*= (rho[2]/rho[1])
- end
- return B
- end
- 
- function Bup!(b,le_rank,re_rank,ls_rank,rs_rank,h,lam)
- m = size(h,1)
- B = zero(b)
- for i in eachindex(re_rank)
- B .+= bup(le_rank[i],re_rank[i],ls_rank[i],rs_rank[i],h,lam)
- end
- copy!(b,B)
- end
- 
- function summingup!(α, β, A, B, h, lam)
- lp = 0.
- m = size(A,1)
- alpha = zero(α)
- beta = zero(β)
- for i in 1:(m-1)
- for j in (i+1):m
- alpha[j-i] += A[i,j] + B[i,j]
- beta[i] += A[i,j] + B[i,j]
- if h[j-i]>0
- lp += xlogy(A[i,j]+B[i,j],h[j-i])
- end
- if lam[i]>0
- lp += xlogy(A[i,j]+B[i,j],lam[i])
- end
- end
- end
- copy!(α,alpha)
- copy!(β,beta)
- return lp
- end
- 
-*/
 
-double par_up(arma::vec & alpha_h, arma::vec & beta_l, arma::vec & h, arma::vec & lam, const arma::mat & A) {
+void Bup(arma::mat & B, const arma::vec & h, const arma::vec & lam,
+         const arma::uvec & lerank, const arma::uvec & rerank,
+         const arma::uvec & lsrank, const arma::uvec & rsrank){
+  int N = lsrank.n_rows;
+  B.fill(0.0);
+  arma::vec rho = arma::zeros<arma::vec>(2);
+  for(int i=0; i<N; i++){
+    //Rprintf("%d : ", i);
+    //convolution
+    for(int e = lerank(i); e<rerank(i); e++){
+      int start = lsrank(i);
+      start = std::max(start, e+1);
+      for(int s=start; s<rsrank(i); s++){
+        int split =  h.n_rows-(rsrank(i)-(s-e))-1;
+        //Rprintf("%d ", split);
+        rho(0) += lam(e)*sum(h.rows(0, split));
+        rho(1) += lam(e)*sum(h.rows(split+1, h.n_rows-1));      
+      }
+      //Rprintf("\n");
+  }
+  //  Rprintf("Conv ");
+  //expectation
+  for(int e=lerank(i); e<rerank(i); e++){
+  for(int s=(rsrank(i)+1); s<h.n_rows; s++){
+  B(e,s) += h(s-e);
+  double sb = arma::accu(B);
+    if(sb > 0){
+      B /= sb;
+      B *= rho(1)/rho(0);
+    }
+    }
+  } 
+  //Rprintf("Exp ");
+  }
+}
+
+
+double par_up(arma::vec & h, arma::vec & lam, const arma::mat & A, const arma::mat & B) {
   int m = h.n_rows;
-  alpha_h.fill(0);
-  beta_l.fill(0);
+  h.fill(0);
+  lam.fill(0);
   for(int e=0; e<m-1; e++){
     //Rprintf("e %d\n", e);
     for(int s=(e+1); s<m; s++){
       //Rprintf("s %d\n", s);
-      alpha_h(s-e) += A(e,s);
-      beta_l(e) += A(e,s);
+      h(s-e) += A(e,s) + B(e,s);
+      lam(e) += A(e,s) + B(e,s);
     }
   }
-  h = alpha_h/sum(alpha_h);
-  lam = beta_l/sum(beta_l);
-  return sumxlogy(alpha_h, h) + sumxlogy(beta_l, lam);
+  arma::vec h2 = h/sum(h);
+  arma::vec lam2 = lam/sum(lam);
+  double lp = sumxlogy(h, h2) + sumxlogy(lam, lam2);
+  h = h2;
+  lam = lam2;
+  return lp;
 }
 
 // [[Rcpp::export]]
@@ -121,20 +97,26 @@ List joint_DIC_em(const arma::uvec & EL,
                   const double & tol) {
   arma::vec alpha_h = arma::ones<arma::vec>(m);
   arma::vec beta_l = arma::ones<arma::vec>(m);
-  arma::mat A = arma::zeros<arma::mat>(m,m);
-  arma::vec lp = arma::zeros<arma::vec>(maxit+1);
   arma::vec h = alpha_h/sum(alpha_h);
   arma::vec lam = beta_l/sum(beta_l);
+  arma::mat A = arma::zeros<arma::mat>(m,m);
+  arma::mat B = arma::zeros<arma::mat>(m,m); //ghost
+  arma::vec lp = arma::zeros<arma::vec>(maxit+1);
+  lp(0) = -std::numeric_limits<double>::max();
   for(int it=1; it<maxit+1; it++){
     Aup(A, h, lam, EL, ER, SL, SR);
-    lp(it) = par_up(alpha_h, beta_l, h, lam, A);
+    //Rprintf("A ");
+    Bup(B, h, lam, EL, ER, SL, SR);
+    //Rprintf("B ");
+    lp(it) = par_up(h, lam, A, B);
     if(abs(lp(it)-lp(it-1)) < tol){
-      lp = lp.rows(1,it);
+      lp = lp.rows(0,it);
       break;
     }
   }
-  return List::create(_["alpha"]=alpha_h,
-                      _["beta"]=beta_l,
+  return List::create(_["incubation"]=h,
+                      _["infection"]=lam,
                       _["event"]=A,
-                      _["lp"]=lp);
+                      _["truncated_event"]=B,
+                      _["logprob"]=lp);
 }
