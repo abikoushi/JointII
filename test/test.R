@@ -1,21 +1,27 @@
 library(JointII)
+library(Matrix)
+library(RColorBrewer)
 #weibull_process(100, shape = 1.5, maxit = 1000)
 y <- rweibull(100, 2, 5)
 simDat <- simDIC(y)
 head(simDat)
-breaks <- setbreaks(simDat$LE, simDat$RE, simDat$LS, simDat$RS)
-RANK <- rankbreaks(simDat$LE, simDat$RE, simDat$LS, simDat$RS, breaks)
-bmrec <- bench::mark({
+# breaks <- setbreaks(simDat$LE, simDat$RE, simDat$LS, simDat$RS)
+# RANK <- rankbreaks(simDat$LE, simDat$RE, simDat$LS, simDat$RS, breaks)
+bmrec2 <- bench::mark({
   est <- jointecdf_dic_em(simDat$LE, simDat$RE, simDat$LS, simDat$RS,
-                          maxit=100L, tol=1e-5)    
+                          maxit=1000L, tol=1e-5)    
 }, min_iterations = 1, max_iterations = 1)
-bmrec$total_time
-plot(est$lp[-1])
+bmrec2
+#save.image()
+plot(est$logprob, type = "s")
 length(breaks)
 head(RANK$LE)
 plot(est$breaks, p2ccdf(est$incubation), type = "s")
 curve(pweibull(x,2,5, lower.tail = FALSE), add=TRUE,lty=2)
 plot(est$breaks, cumsum(est$infection), type = "s")
 abline(0, 1/100, lty=2)
-image(est$breaks, est$breaks, est$event, col = hcl.colors(12))
-abline(0, 1, col="lightgrey")
+plot(est$breaks,cumsum(colSums(est$event)), type="s")
+lines(est$breaks,cumsum(colSums(est$truncated_event)), type="s")
+image(est$breaks, est$breaks, as.matrix(est$event), col = brewer.pal(9, name = "Blues"))
+abline(0, 1, col="darkgrey", lty=2)
+

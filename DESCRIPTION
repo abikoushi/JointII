@@ -1,10 +1,10 @@
 Package: JointII
 Type: Package
 Title: What the Package Does (Short Line)
-Version: 1.0
+Version: 0.1
 Author: Ko Abe
 Maintainer: Who to complain to <yourfault@somewhere.net>
 Description: More about what it does (maybe more than one line).
 License: What license is it under?
-Imports: Rcpp (>= 1.0.13-1)
+Imports: Rcpp (>= 1.0.13-1), Matrix
 LinkingTo: Rcpp, RcppArmadillo

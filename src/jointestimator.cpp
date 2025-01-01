@@ -19,22 +19,24 @@ arma::mat a_upsub(const arma::vec & h, const arma::vec & lam,
   return a;
 }
 
-void Aup(arma::mat & A, const arma::vec & h, const arma::vec & lam,
+void Aup(arma::sp_mat & A, const arma::vec & h, const arma::vec & lam,
           const arma::uvec & lerank, const arma::uvec & rerank,
           const arma::uvec & lsrank, const arma::uvec & rsrank) {
   int n = lsrank.n_rows;
-  A.fill(0.0);
+  //A.fill(0.0);
+  A = arma::sp_mat(A.n_rows, A.n_cols);
   for(int i=0; i<n; i++){
     A += a_upsub(h, lam, lerank(i), rerank(i), lsrank(i), rsrank(i));
   }
 }
 
 
-void Bup(arma::mat & B, const arma::vec & h, const arma::vec & lam,
+void Bup(arma::sp_mat & B, const arma::vec & h, const arma::vec & lam,
          const arma::uvec & lerank, const arma::uvec & rerank,
          const arma::uvec & lsrank, const arma::uvec & rsrank){
   int N = lsrank.n_rows;
-  B.fill(0.0);
+  //B.fill(0.0);
+  B = arma::sp_mat(B.n_rows, B.n_cols);
   arma::vec rho = arma::zeros<arma::vec>(2);
   for(int i=0; i<N; i++){
     //Rprintf("%d : ", i);
@@ -67,7 +69,7 @@ void Bup(arma::mat & B, const arma::vec & h, const arma::vec & lam,
 }
 
 
-double par_up(arma::vec & h, arma::vec & lam, const arma::mat & A, const arma::mat & B) {
+double par_up(arma::vec & h, arma::vec & lam, const arma::sp_mat & A, const arma::sp_mat & B) {
   int m = h.n_rows;
   h.fill(0);
   lam.fill(0);
@@ -99,8 +101,8 @@ List joint_DIC_em(const arma::uvec & EL,
   arma::vec beta_l = arma::ones<arma::vec>(m);
   arma::vec h = alpha_h/sum(alpha_h);
   arma::vec lam = beta_l/sum(beta_l);
-  arma::mat A = arma::zeros<arma::mat>(m,m);
-  arma::mat B = arma::zeros<arma::mat>(m,m); //ghost
+  arma::sp_mat A(m,m);
+  arma::sp_mat B(m,m); //ghost
   arma::vec lp = arma::zeros<arma::vec>(maxit+1);
   lp(0) = -std::numeric_limits<double>::max();
   for(int it=1; it<maxit+1; it++){
