@@ -1,5 +1,5 @@
 #include <RcppArmadillo.h>
-#include "util.h"
+#include "logsumfun.h"
 // [[Rcpp::depends(RcppArmadillo)]]
 using namespace Rcpp;
 
@@ -15,7 +15,9 @@ arma::sp_mat a_upsub(const arma::vec & h, const arma::vec & lam,
     }
     //Rprintf("\n");
   }
+  //Rprintf("1 ");
   a /= arma::accu(a);
+  //Rprintf("2 ");
   return a;
 }
 
@@ -53,9 +55,12 @@ arma::sp_mat b_upsub(const arma::vec & h, const arma::vec & lam,
     for(int s=rsrank+1; s<h.n_rows; s++){
       b(e,s) += h(s-e);
       double sb = arma::accu(b);
-      if(sb > 0){
+      if(sb > 0.0){
+        //Rprintf("1 ");
         b /= sb;
+        //Rprintf("2 ");
         b *= rho(1)/rho(0);
+        //Rprintf("3\n");
       }
     }
   }
@@ -103,6 +108,8 @@ List joint_DIC_em(const arma::uvec & EL,
                   const double & tol) {
   arma::vec alpha_h = arma::ones<arma::vec>(m);
   arma::vec beta_l = arma::ones<arma::vec>(m);
+  //arma::sp_vec alpha_h(m);
+  //arma::sp_vec beta_l(m);
   arma::vec h = alpha_h/sum(alpha_h);
   arma::vec lam = beta_l/sum(beta_l);
   h = h/sum(h);
@@ -131,7 +138,6 @@ List joint_DIC_em(const arma::uvec & EL,
                       _["logprob"]=lp);
 }
 
-/*
 double vpar_up(arma::vec & alpha_h, arma::vec & alpha_l, 
                arma::vec & h, arma::vec & lam, 
                const arma::sp_mat & A, const arma::sp_mat & B) {
@@ -151,9 +157,7 @@ double vpar_up(arma::vec & alpha_h, arma::vec & alpha_l,
   double lp = sumxlogy(alpha_h, h) + sumxlogy(alpha_l, lam);
   return lp;
 }
-*/
 
-/*
 // [[Rcpp::export]]
 List joint_DIC_vb(const arma::uvec & EL,
                   const arma::uvec & ER,
@@ -187,4 +191,3 @@ List joint_DIC_vb(const arma::uvec & EL,
                       _["truncated_event"]=B,
                       _["logprob"]=lp);
 }
-*/

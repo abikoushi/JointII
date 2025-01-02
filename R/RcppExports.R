@@ -5,3 +5,11 @@ joint_DIC_em <- function(EL, ER, SL, SR, m, maxit, tol) {
     .Call(`_JointII_joint_DIC_em`, EL, ER, SL, SR, m, maxit, tol)
 }
 
+joint_DIC_vb <- function(EL, ER, SL, SR, m, maxit, tol) {
+    .Call(`_JointII_joint_DIC_vb`, EL, ER, SL, SR, m, maxit, tol)
+}
+
+timesTwo <- function(x) {
+    .Call(`_JointII_timesTwo`, x)
+}
+

@@ -28,9 +28,39 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// joint_DIC_vb
+List joint_DIC_vb(const arma::uvec& EL, const arma::uvec& ER, const arma::uvec& SL, const arma::uvec& SR, const int& m, const int& maxit, const double& tol);
+RcppExport SEXP _JointII_joint_DIC_vb(SEXP ELSEXP, SEXP ERSEXP, SEXP SLSEXP, SEXP SRSEXP, SEXP mSEXP, SEXP maxitSEXP, SEXP tolSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const arma::uvec& >::type EL(ELSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type ER(ERSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type SL(SLSEXP);
+    Rcpp::traits::input_parameter< const arma::uvec& >::type SR(SRSEXP);
+    Rcpp::traits::input_parameter< const int& >::type m(mSEXP);
+    Rcpp::traits::input_parameter< const int& >::type maxit(maxitSEXP);
+    Rcpp::traits::input_parameter< const double& >::type tol(tolSEXP);
+    rcpp_result_gen = Rcpp::wrap(joint_DIC_vb(EL, ER, SL, SR, m, maxit, tol));
+    return rcpp_result_gen;
+END_RCPP
+}
+// timesTwo
+NumericVector timesTwo(NumericVector x);
+RcppExport SEXP _JointII_timesTwo(SEXP xSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
+    rcpp_result_gen = Rcpp::wrap(timesTwo(x));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_JointII_joint_DIC_em", (DL_FUNC) &_JointII_joint_DIC_em, 7},
+    {"_JointII_joint_DIC_vb", (DL_FUNC) &_JointII_joint_DIC_vb, 7},
+    {"_JointII_timesTwo", (DL_FUNC) &_JointII_timesTwo, 1},
     {NULL, NULL, 0}
 };
 
