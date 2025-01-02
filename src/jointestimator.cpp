@@ -185,8 +185,10 @@ List joint_DIC_vb(const arma::uvec & EL,
       break;
     }
   }
-  return List::create(_["alpha_h"]=alpha_h,
-                      _["alpha_l"]=alpha_l,
+  return List::create(_["incubation"]=alpha_h/sum(alpha_h),
+                      _["infection"]=alpha_l/sum(alpha_l),
+                      _["alpha"]=alpha_h,
+                      _["beta"]=alpha_l,
                       _["event"]=A,
                       _["truncated_event"]=B,
                       _["logprob"]=lp);
