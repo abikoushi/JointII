@@ -45,14 +45,15 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
-// timesTwo
-NumericVector timesTwo(NumericVector x);
-RcppExport SEXP _JointII_timesTwo(SEXP xSEXP) {
+// rand_gamma
+arma::sp_mat rand_gamma(const arma::vec& alpha, const int& np);
+RcppExport SEXP _JointII_rand_gamma(SEXP alphaSEXP, SEXP npSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< NumericVector >::type x(xSEXP);
-    rcpp_result_gen = Rcpp::wrap(timesTwo(x));
+    Rcpp::traits::input_parameter< const arma::vec& >::type alpha(alphaSEXP);
+    Rcpp::traits::input_parameter< const int& >::type np(npSEXP);
+    rcpp_result_gen = Rcpp::wrap(rand_gamma(alpha, np));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -60,7 +61,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_JointII_joint_DIC_em", (DL_FUNC) &_JointII_joint_DIC_em, 7},
     {"_JointII_joint_DIC_vb", (DL_FUNC) &_JointII_joint_DIC_vb, 7},
-    {"_JointII_timesTwo", (DL_FUNC) &_JointII_timesTwo, 1},
+    {"_JointII_rand_gamma", (DL_FUNC) &_JointII_rand_gamma, 2},
     {NULL, NULL, 0}
 };
 

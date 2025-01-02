@@ -9,7 +9,7 @@ joint_DIC_vb <- function(EL, ER, SL, SR, m, maxit, tol) {
     .Call(`_JointII_joint_DIC_vb`, EL, ER, SL, SR, m, maxit, tol)
 }
 
-timesTwo <- function(x) {
-    .Call(`_JointII_timesTwo`, x)
+rand_gamma <- function(alpha, np) {
+    .Call(`_JointII_rand_gamma`, alpha, np)
 }
 

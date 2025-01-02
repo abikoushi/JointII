@@ -1,19 +1,14 @@
-#include <Rcpp.h>
+#include <RcppArmadillo.h>
+// [[Rcpp::depends(RcppArmadillo)]]
 using namespace Rcpp;
 
-
-
 // [[Rcpp::export]]
-NumericVector timesTwo(NumericVector x) {
-  return x * 2;
+arma::sp_mat rand_gamma(const arma::vec & alpha, const int & np) {
+  arma::sp_mat out(np, alpha.n_rows);
+  for(int i = 0; i < alpha.n_rows; i++){
+    if(alpha(i)>0.0){
+      out.col(i) = arma::randg(np, arma::distr_param(alpha(i), 1.0)); 
+    }
+  }
+  return out;
 }
-
-
-// You can include R code blocks in C++ files processed with sourceCpp
-// (useful for testing and development). The R code will be automatically 
-// run after the compilation.
-//
-
-/*** R
-timesTwo(42)
-*/
