@@ -30,12 +30,13 @@ weibull_process <- function(window, shape, maxit){
   out[1] = at
   for(i in 1:maxit){
     z = runif(1) #next infection
-    at =  ((-log(z))^(1/shape) + at^shape)^(1/shape)
-    out[i] = at
+    at =  (-log(z) + at^shape)^(1/shape)
+    #at =  ((-log(z))^(1/shape) + at^shape)^(1/shape)
     if(at >= window){
-      out = out[1:i]
+      out = out[1:(i-1)]
       break
     }
+    out[i] = at
   }
   return(out)
 }
