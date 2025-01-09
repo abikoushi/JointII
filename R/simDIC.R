@@ -2,6 +2,7 @@
 simDIC <- function(y, at=NULL, WS=NULL, WE=NULL){
   N <- length(y)
   if(is.null(at)){
+    #homogineous Poisson process
     at <- cumsum(rexp(N))
   }
   if(is.null(WS)){
@@ -12,11 +13,11 @@ simDIC <- function(y, at=NULL, WS=NULL, WE=NULL){
   }
   S <- at + y
   r_e <- runif(N)
+  LE <- at - r_e*WE
+  RE <- at + (1-r_e)*WE
   r_s <- runif(N)
   LS <- S - r_s*WS
   RS <- S + (1-r_s)*WS
-  LE <- at - r_e*WE
-  RE <- at + (1-r_e)*WE
   return(data.frame(LE=pmax(LE,0), RE=RE,
                     LS=pmax(LS,LE,0), RS=RS,
                     E=at, S=S))
