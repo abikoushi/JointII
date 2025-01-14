@@ -34,21 +34,21 @@ void Aup(arma::sp_mat & A,
   }
 }
 
-arma::sp_mat b_upsub(const arma::vec & h, const arma::vec & lam,
+arma::sp_mat b_upsub(const arma::vec & logh, const arma::vec & loglam,
                      const int & lerank, const int & rerank,
                      const int & lsrank, const int & rsrank){
-  arma::sp_mat b = arma::sp_mat(h.n_rows, h.n_rows);
+  arma::sp_mat b = arma::sp_mat(logh.n_rows, logh.n_rows);
   arma::vec rho = arma::zeros<arma::vec>(2);
   //convolution
   for(int e = lerank; e<rerank; e++){
     int start = std::max(lsrank, e+1);
     for(int s=start; s<rsrank; s++){
-      int split =  h.n_rows-(rsrank-(s-e))-1;
+      int split = logh.n_rows-(rsrank-(s-e))-1;
       //Rprintf("%d ", split);
-      rho(0) += lam(e)*sum(h.rows(0, split));
-      rho(1) += lam(e)*sum(h.rows(split+1, h.n_rows-1));
-      //rho(0) += exp(loglam(e) + logsumexp(logh.rows(0, split)));
-      //rho(1) += exp(loglam(e) + logsumexp(logh.rows(split+1, logh.n_rows-1)));
+      //rho(0) += lam(e)*sum(h.rows(0, split));
+      //rho(1) += lam(e)*sum(h.rows(split+1, h.n_rows-1));
+      rho(0) += exp(loglam(e) + logsumexp(logh.rows(0, split)));
+      rho(1) += exp(loglam(e) + logsumexp(logh.rows(split+1, logh.n_rows-1)));
     }
     //Rprintf("\n");
   }
@@ -56,9 +56,9 @@ arma::sp_mat b_upsub(const arma::vec & h, const arma::vec & lam,
   //expectation
   int end = std::min(rsrank, rerank);
   for(int e=lerank; e<end; e++){
-    for(int s=rsrank+1; s<h.n_rows; s++){
-      b(e,s) += h(s-e);
-      //b(e,s) += exp(logh(s-e));
+    for(int s=rsrank+1; s<logh.n_rows; s++){
+      //b(e,s) += h(s-e);
+      b(e,s) += exp(logh(s-e));
     }
   }
   double sb = arma::accu(b);
@@ -129,7 +129,7 @@ List joint_DIC_em(const arma::uvec & EL,
   for(int it=1; it<maxit+1; it++){
     Aup(A, log(h), log(lam), EL, ER, SL, SR);
     //Rprintf("A ");
-    Bup(B, h, lam, EL, ER, SL, SR);
+    Bup(B, log(h), log(lam), EL, ER, SL, SR);
     //Rprintf("B ");
     lp(it) = par_up(alpha_h, beta_l, h, lam, A, B);
     if(abs(lp(it)-lp(it-1)) < tol){
@@ -192,7 +192,7 @@ List joint_DIC_vb(const arma::uvec & EL,
   for(int it=1; it<maxit+1; it++){
     Aup(A, logh, loglam, EL, ER, SL, SR);
     //Rprintf("A ");
-    Bup(B, exp(logh), exp(loglam), EL, ER, SL, SR);
+    Bup(B, logh, loglam, EL, ER, SL, SR);
     //Rprintf("B ");
     lp(it) = vpar_up(alpha_h, alpha_l, logh, loglam, A, B);
     if(abs(lp(it)-lp(it-1)) < tol){

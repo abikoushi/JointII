@@ -2,7 +2,7 @@
 #include "logsumfun.h"
 
 double sumxlogy(const arma::vec & x, const arma::vec & y){
-  double out=0;
+  double out=0.0;
   for(int i=0; i<x.n_rows; i++){
     if(x(i)>0.0 && y(i)>0.0){
       out += x(i)*log(y(i));
@@ -12,9 +12,9 @@ double sumxlogy(const arma::vec & x, const arma::vec & y){
 }
 
 double sumxy(const arma::vec & x, const arma::vec & y){
-  double out=0;
+  double out=0.0;
   for(int i=0; i<x.n_rows; i++){
-    if(x(i)>0.0 && y(i)>0.0){
+    if(x(i)>0.0){
       out += x(i)*y(i);
     }
   }
@@ -47,5 +47,5 @@ arma::vec meanlog(arma::vec x){
 
 double logsumexp(arma::vec x){
   double mx = max(x);
-  return log(mx) - log(sum(exp(x-mx)));
+  return mx + log(sum(exp(x-mx)));
 };
