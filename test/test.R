@@ -12,8 +12,8 @@ logsumexp <- function(x){
   mx + log(sum(exp(x-mx)))
 }
 
-logsumexp(1:10)
-log(sum(exp(1:10)))
+# logsumexp(1:10)
+# log(sum(exp(1:10)))
 
 Lambda <- function(x, sigma){
   x^sigma
@@ -22,36 +22,31 @@ Lambda <- function(x, sigma){
 trueparam <- list(shape=1.5, scale=3)
 sigma <- 1.1
 tau <- 100L
-set.seed(7689)
+set.seed(575889)
 at = weibull_process(tau, shape = sigma, maxit = 10000)
 y <- rgamma(length(at), trueparam$shape, scale = trueparam$scale)
 simDat0 <- simDIC(y, at = at)
 simDat <- simDat0[simDat0$RS<tau, ]
 
 system.time({
-  est <- jointfit_dic(simDat$LE, simDat$RE, simDat$LS, simDat$RS, tau = tau,
-                          maxit=2L, tol=0, method = "VB")
+  est <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
+                      maxit=5L, tol=0, method = "VB")
 })
 
-system.time({
-  est2 <- jointfit_dic(simDat$LE, simDat$RE, simDat$LS, simDat$RS, tau = tau,
-                      maxit=3L, tol=0, method = "VB")
-})
+plot(est$logprob, type = "l")
+as.vector(est$logprob)
 
-plot(est$logprob)
-image(t(est$truncated_event))
+is.na(est$alpha)
+is.na(est$beta)
 
-range(est$alpha[!is.nan(est2$alpha)])
-range(est$alpha[is.nan(est2$alpha)])
-
-range(est$beta[!is.nan(est2$beta)])
-range(est$beta[is.nan(est2$beta)])
+image(est$event)
+hist(est$truncated_event@x)
 
 plot(est$breaks, cumsum(est$incubation), type="s")
 curve(pgamma(x, shape = trueparam$shape, scale = trueparam$scale), col="royalblue", add=TRUE)
 
 plot(est2$breaks, cumsum(est2$incubation), type="s")
-curve(pgamma(x, shape = trueparam$shape, scale = trueparam$scale), col="royalblue", add=TRUE)
+curve(pgamma(x, shape = trueparam$shape, scale = trueparam$scale), col="royalblue", add=TRUE, n = 101)
 
 
 plot(est$logprob, type="l")

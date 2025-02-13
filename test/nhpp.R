@@ -11,8 +11,15 @@ Lambda <- function(x){
   x^sigma
 }
 
-sigma = 0.8
+integ <- function(x){
+  plnorm(tau-x, log(10)-0.5, 1, lower.tail=FALSE) * lambda(x)  
+}
+
+sigma = 1.2
+tau=20
 res_int <- integrate(integ, lower = 0, upper = tau)
+res_int
+
 Ns <- integer(1e+4L)
 for(i in 1L:1e+4L){
   at <- weibull_process(window = tau, shape = sigma, maxit = 100000)

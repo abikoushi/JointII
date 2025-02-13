@@ -4,19 +4,16 @@
 using namespace Rcpp;
 
 arma::sp_mat a_upsub(const arma::vec & logh, const arma::vec & loglam,
-                const int & lerank, const int & rerank,
-                const int & lsrank, const int & rsrank) {
+                     const int & lerank, const int & rerank,
+                     const int & lsrank, const int & rsrank) {
   arma::sp_mat a(logh.n_rows, logh.n_rows);
   for(int e=lerank; e<rerank; e++){
     int sta = std::max(lsrank, e+1);
     for(int s=sta; s<rsrank; s++){
-      //Rprintf("%d ",s-e);
       a(e,s) += exp(logh(s-e) + loglam(e));
     }
-    //Rprintf("\n");
   }
   double den = arma::accu(a);
-  //Rprintf("%f ", den);
   a /= den;
   return a;
 }
@@ -25,11 +22,8 @@ void Aup(arma::sp_mat & A,
          const arma::vec & logh, const arma::vec & loglam,
          const arma::uvec & lerank, const arma::uvec & rerank,
          const arma::uvec & lsrank, const arma::uvec & rsrank) {
-  int N = lsrank.n_rows;
-  //A.fill(0.0);
   A = arma::sp_mat(A.n_rows, A.n_cols);
-  for(int i=0; i<N; i++){
-    //Rprintf("%d ", i);
+  for(int i=0; i<lsrank.n_rows; i++){
     A += a_upsub(logh, loglam, lerank(i), rerank(i), lsrank(i), rsrank(i));
   }
 }
@@ -50,24 +44,19 @@ arma::sp_mat b_upsub(const arma::vec & logh, const arma::vec & loglam,
       rho(0) += exp(loglam(e) + logsumexp(logh.rows(0, split)));
       rho(1) += exp(loglam(e) + logsumexp(logh.rows(split+1, logh.n_rows-1)));
     }
-    //Rprintf("\n");
   }
-  //Rprintf("Conv ");
+  rho /= sum(rho);
   //expectation
   int end = std::min(rsrank, rerank);
   for(int e=lerank; e<end; e++){
-    for(int s=rsrank+1; s<logh.n_rows; s++){
-      //b(e,s) += h(s-e);
+    for(int s=(rsrank+1); s<logh.n_rows; s++){
       b(e,s) += exp(logh(s-e));
     }
   }
   double sb = arma::accu(b);
   if(sb > 0.0 && rho(0) > 0.0){
-    //Rprintf("1 ");
     b /= sb;
-    //Rprintf("2 ");
     b *= rho(1)/rho(0);
-    //Rprintf("3\n");
   }
  return b;
 }
@@ -76,12 +65,9 @@ void Bup(arma::sp_mat & B,
          const arma::vec & h, const arma::vec & lam,
          const arma::uvec & lerank, const arma::uvec & rerank,
          const arma::uvec & lsrank, const arma::uvec & rsrank){
-  int N = lsrank.n_rows;
   B = arma::sp_mat(B.n_rows, B.n_cols);
-  for(int i=0; i<N; i++){
-    //Rprintf("%d : ", i);
+  for(int i=0; i<lsrank.n_rows; i++){
     B += b_upsub(h, lam, lerank(i), rerank(i), lsrank(i), rsrank(i));
-    //Rprintf("\n");
   }
 }
 
@@ -90,19 +76,16 @@ double par_up(arma::vec & alpha_h, arma::vec & beta_l, arma::vec & h, arma::vec 
   int m = h.n_rows;
   alpha_h.fill(0);
   beta_l.fill(0);
+  double lp = 0;
   for(int e=0; e<m-1; e++){
-    //Rprintf("e %d\n", e);
     for(int s=(e+1); s<m; s++){
-      //Rprintf("s %d\n", s);
       alpha_h(s-e) += A(e,s) + B(e,s);
       beta_l(e) += A(e,s) + B(e,s);
     }
   }
-  //e=m (excluded in the for statement above)
-  beta_l(m-1) += sum(A.row(m-1)) + sum(B.row(m-1));
   h = alpha_h/sum(alpha_h);
   lam = beta_l/sum(beta_l);
-  double lp = sumxlogy(alpha_h, h) + sumxlogy(beta_l, lam);
+  lp = sumxlogy(alpha_h, h) + sumxlogy(beta_l, lam);
   return lp;
 }
 
@@ -152,23 +135,28 @@ double vpar_up(arma::vec & alpha_h, arma::vec & alpha_l,
                arma::vec & logh, arma::vec & loglam, 
                const arma::sp_mat & A, const arma::sp_mat & B) {
   int m = logh.n_rows;
-  alpha_h.fill(0);
-  alpha_l.fill(0);
+  alpha_h.fill(0.0);
+  alpha_l.fill(0.0);
+  double lp = 0.0;
   for(int e=0; e<m-1; e++){
     //Rprintf("e %d\n", e);
     for(int s=(e+1); s<m; s++){
       //Rprintf("s %d\n", s);
       alpha_h(s-e) += A(e,s) + B(e,s);
       alpha_l(e) += A(e,s) + B(e,s);
+      if(exp(logh(s-e)) > 0.0){
+        lp += (A(e,s)+B(e,s))*logh(s-e);
+      }
+      if(exp(loglam(e)) > 0.0){
+        lp += (A(e,s)+B(e,s))*loglam(e);        
+      }
     }
   }
-  //e=m (excluded in the for statement above)
-  alpha_l(m-1) += sum(A.row(m-1)) + sum(B.row(m-1));
   //h = expmeanlog(alpha_h);
   //lam = expmeanlog(alpha_l);
   logh = meanlog(alpha_h);
   loglam = meanlog(alpha_l);
-  double lp = sumxy(alpha_h, logh) + sumxy(alpha_l, loglam);
+  //lp = sumxy(alpha_h, logh) + sumxy(alpha_l, loglam);
   //double lp = sumxlogy(alpha_h, h) + sumxlogy(alpha_l, lam);
   return lp;
 }

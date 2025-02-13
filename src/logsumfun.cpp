@@ -1,10 +1,13 @@
 #include <RcppArmadillo.h>
 #include "logsumfun.h"
 
+const double epsilon = std::numeric_limits<double>::min();
+
 double sumxlogy(const arma::vec & x, const arma::vec & y){
   double out=0.0;
   for(int i=0; i<x.n_rows; i++){
-    if(x(i)>0.0 && y(i)>0.0){
+    //if(x(i)>0.0 && y(i)>0.0){
+    if(x(i)>0.0){
       out += x(i)*log(y(i));
     }
   }
@@ -14,7 +17,7 @@ double sumxlogy(const arma::vec & x, const arma::vec & y){
 double sumxy(const arma::vec & x, const arma::vec & y){
   double out=0.0;
   for(int i=0; i<x.n_rows; i++){
-    if(x(i)>0.0){
+    if(x(i) > epsilon){
       out += x(i)*y(i);
     }
   }
@@ -24,9 +27,8 @@ double sumxy(const arma::vec & x, const arma::vec & y){
 arma::vec expmeanlog(arma::vec x){
   double sumx = sum(x);
   arma::vec out = arma::zeros<arma::vec>(x.n_rows);
-  //out.fill(0);
   for(int i=0; i<x.n_rows; i++){
-    if(x(i)>0.0){
+    if(x(i) > epsilon){
       out(i) = exp(R::digamma(x(i)) - R::digamma(sumx)); 
     }
   }
@@ -36,9 +38,8 @@ arma::vec expmeanlog(arma::vec x){
 arma::vec meanlog(arma::vec x){
   double sumx = sum(x);
   arma::vec out = arma::zeros<arma::vec>(x.n_rows);
-  //out.fill(0);
   for(int i=0; i<x.n_rows; i++){
-    if(x(i)>0.0){
+    if(x(i) > epsilon){
       out(i) = R::digamma(x(i)) - R::digamma(sumx);
     }
   }
