@@ -20,34 +20,30 @@ Lambda <- function(x, sigma){
 }
 
 trueparam <- list(shape=1.5, scale=3)
-sigma <- 1.1
+sigma <- 1
 tau <- 100L
-set.seed(575889)
+set.seed(5889)
 at = weibull_process(tau, shape = sigma, maxit = 10000)
 y <- rgamma(length(at), trueparam$shape, scale = trueparam$scale)
+mean(y)
 simDat0 <- simDIC(y, at = at)
 simDat <- simDat0[simDat0$RS<tau, ]
 
 system.time({
   est <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
-                      maxit=5L, tol=0, method = "VB")
+                      maxit=100L, tol=1e-8, method = "VB")
 })
 
-plot(est$logprob, type = "l")
-as.vector(est$logprob)
+system.time({
+  est2 <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
+                      maxit=100L, tol=1e-8, method = "EM")
+})
 
-is.na(est$alpha)
-is.na(est$beta)
+plot(est$logprob[-1], type = "l")
 
-image(est$event)
-hist(est$truncated_event@x)
-
-plot(est$breaks, cumsum(est$incubation), type="s")
-curve(pgamma(x, shape = trueparam$shape, scale = trueparam$scale), col="royalblue", add=TRUE)
-
-plot(est2$breaks, cumsum(est2$incubation), type="s")
-curve(pgamma(x, shape = trueparam$shape, scale = trueparam$scale), col="royalblue", add=TRUE, n = 101)
-
+plot(est$breaks, cumsum(est$incubation), type="s", col="royalblue")
+lines(est2$breaks, cumsum(est2$incubation), type="s", col="orangered")
+curve(pgamma(x, shape = trueparam$shape, scale = trueparam$scale), add=TRUE, lty=2)
 
 plot(est$logprob, type="l")
 dim(simDat0)

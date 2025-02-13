@@ -3,6 +3,7 @@
 // [[Rcpp::depends(RcppArmadillo)]]
 using namespace Rcpp;
 
+/*
 arma::sp_mat a_upsub(const arma::vec & logh, const arma::vec & loglam,
                      const int & lerank, const int & rerank,
                      const int & lsrank, const int & rsrank) {
@@ -17,17 +18,36 @@ arma::sp_mat a_upsub(const arma::vec & logh, const arma::vec & loglam,
   a /= den;
   return a;
 }
+*/
+
+arma::sp_mat a_upsub(const arma::vec & h, const arma::vec & lam,
+                     const int & lerank, const int & rerank,
+                     const int & lsrank, const int & rsrank) {
+  arma::sp_mat a(h.n_rows, h.n_rows);
+  for(int e=lerank; e<rerank; e++){
+    int sta = std::max(lsrank, e+1);
+    for(int s=sta; s<rsrank; s++){
+      a(e,s) += h(s-e)*lam(e);
+    }
+  }
+  double den = arma::accu(a);
+  if(den > 0.0){
+    a /= den;    
+  }
+  return a;
+}
 
 void Aup(arma::sp_mat & A, 
-         const arma::vec & logh, const arma::vec & loglam,
+         const arma::vec & h, const arma::vec & lam,
          const arma::uvec & lerank, const arma::uvec & rerank,
          const arma::uvec & lsrank, const arma::uvec & rsrank) {
   A = arma::sp_mat(A.n_rows, A.n_cols);
   for(int i=0; i<lsrank.n_rows; i++){
-    A += a_upsub(logh, loglam, lerank(i), rerank(i), lsrank(i), rsrank(i));
+    A += a_upsub(h, lam, lerank(i), rerank(i), lsrank(i), rsrank(i));
   }
 }
 
+/*
 arma::sp_mat b_upsub(const arma::vec & logh, const arma::vec & loglam,
                      const int & lerank, const int & rerank,
                      const int & lsrank, const int & rsrank){
@@ -59,6 +79,37 @@ arma::sp_mat b_upsub(const arma::vec & logh, const arma::vec & loglam,
     b *= rho(1)/rho(0);
   }
  return b;
+}
+*/
+
+arma::sp_mat b_upsub(const arma::vec & h, const arma::vec & lam,
+                     const int & lerank, const int & rerank,
+                     const int & lsrank, const int & rsrank){
+  arma::vec rho = arma::zeros<arma::vec>(2);
+  //convolution
+  for(int e = lerank; e<rerank; e++){
+    int start = std::max(lsrank, e+1);
+    for(int s=start; s<rsrank; s++){
+      int split = h.n_rows-(rsrank-(s-e))-1;
+      rho(0) += lam(e) * sum(h.rows(0, split));
+      rho(1) += lam(e) * sum(h.rows(split+1, h.n_rows-1));
+    }
+  }
+  //expectation
+  arma::sp_mat b = arma::sp_mat(h.n_rows, h.n_rows);
+  int end = std::min(rsrank, rerank);
+  for(int e=lerank; e<end; e++){
+    for(int s=(rsrank+1); s<h.n_rows; s++){
+      b(e,s) += h(s-e);
+    }
+  }
+  double sb = arma::accu(b);
+  if(sb > 0.0 && rho(0) > 0.0){
+    rho /= sum(rho);
+    b /= sb;
+    b *= rho(1)/rho(0);
+  }
+  return b;
 }
 
 void Bup(arma::sp_mat & B,
@@ -110,9 +161,9 @@ List joint_DIC_em(const arma::uvec & EL,
   arma::vec lp = arma::zeros<arma::vec>(maxit+1);
   lp(0) = -std::numeric_limits<double>::max();
   for(int it=1; it<maxit+1; it++){
-    Aup(A, log(h), log(lam), EL, ER, SL, SR);
+    Aup(A, h, lam, EL, ER, SL, SR);
     //Rprintf("A ");
-    Bup(B, log(h), log(lam), EL, ER, SL, SR);
+    Bup(B, h, lam, EL, ER, SL, SR);
     //Rprintf("B ");
     lp(it) = par_up(alpha_h, beta_l, h, lam, A, B);
     if(abs(lp(it)-lp(it-1)) < tol){
@@ -132,9 +183,9 @@ List joint_DIC_em(const arma::uvec & EL,
 
 
 double vpar_up(arma::vec & alpha_h, arma::vec & alpha_l, 
-               arma::vec & logh, arma::vec & loglam, 
+               arma::vec & h, arma::vec & lam, 
                const arma::sp_mat & A, const arma::sp_mat & B) {
-  int m = logh.n_rows;
+  int m = h.n_rows;
   alpha_h.fill(0.0);
   alpha_l.fill(0.0);
   double lp = 0.0;
@@ -144,18 +195,18 @@ double vpar_up(arma::vec & alpha_h, arma::vec & alpha_l,
       //Rprintf("s %d\n", s);
       alpha_h(s-e) += A(e,s) + B(e,s);
       alpha_l(e) += A(e,s) + B(e,s);
-      if(exp(logh(s-e)) > 0.0){
-        lp += (A(e,s)+B(e,s))*logh(s-e);
+      if(h(s-e) > 0.0){
+        lp += (A(e,s)+B(e,s))*log(h(s-e));
       }
-      if(exp(loglam(e)) > 0.0){
-        lp += (A(e,s)+B(e,s))*loglam(e);        
+      if(lam(e) > 0.0){
+        lp += (A(e,s)+B(e,s))*log(lam(e));
       }
     }
   }
-  //h = expmeanlog(alpha_h);
-  //lam = expmeanlog(alpha_l);
-  logh = meanlog(alpha_h);
-  loglam = meanlog(alpha_l);
+  h = expmeanlog(alpha_h);
+  lam = expmeanlog(alpha_l);
+  //logh = meanlog(alpha_h);
+  //loglam = meanlog(alpha_l);
   //lp = sumxy(alpha_h, logh) + sumxy(alpha_l, loglam);
   //double lp = sumxlogy(alpha_h, h) + sumxlogy(alpha_l, lam);
   return lp;
@@ -171,18 +222,18 @@ List joint_DIC_vb(const arma::uvec & EL,
                   const double & tol) {
   arma::vec alpha_h = arma::ones<arma::vec>(m);
   arma::vec alpha_l = arma::ones<arma::vec>(m);
-  arma::vec logh = log(alpha_h) - log(sum(alpha_h));
-  arma::vec loglam = log(alpha_l) - log(sum(alpha_l));
+  arma::vec h = alpha_h/sum(alpha_h);
+  arma::vec lam =alpha_l/sum(alpha_l);
   arma::sp_mat A(m,m);
   arma::sp_mat B(m,m); //ghost
   arma::vec lp = arma::zeros<arma::vec>(maxit+1);
   lp(0) = -std::numeric_limits<double>::max();
   for(int it=1; it<maxit+1; it++){
-    Aup(A, logh, loglam, EL, ER, SL, SR);
+    Aup(A, h, lam, EL, ER, SL, SR);
     //Rprintf("A ");
-    Bup(B, logh, loglam, EL, ER, SL, SR);
+    Bup(B, h, lam, EL, ER, SL, SR);
     //Rprintf("B ");
-    lp(it) = vpar_up(alpha_h, alpha_l, logh, loglam, A, B);
+    lp(it) = vpar_up(alpha_h, alpha_l, h, lam, A, B);
     if(abs(lp(it)-lp(it-1)) < tol){
       lp = lp.rows(0,it);
       break;
