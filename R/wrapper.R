@@ -15,6 +15,26 @@ rankbreaks <- function(LE, RE, LS, RS, breaks){
        RS=match(RS, breaks))
 }
 
+conditionalfit_dic <- function(LE, RE, LS, RS,
+                               tau=NULL, maxit=1000L, tol=1e-5, method="VB"){
+  breaks <- setbreaks(LE, RE, LS, RS, tau=tau)
+  RANK <- rankbreaks(LE, RE, LS, RS, breaks)
+  #the index is 0-origin in cpp
+  if(method == "VB"){
+    res <- with(RANK, conditional_DIC_vb(LE-1L, RE-1L, LS-1L, RS-1L, 
+                                   m = length(breaks), maxit = maxit, tol = tol))
+  }else if(method == "EM"){
+     res <- with(RANK, conditional_DIC_em(LE-1L, RE-1L, LS-1L, RS-1L, 
+                                    m = length(breaks), maxit = maxit, tol = tol))    
+  }else{
+    warning("this method is not implemented")
+    break
+  }
+  res$logprob <- res$logprob[-1]
+  res$breaks <- breaks
+  return(res)
+}
+
 jointfit_dic <- function(LE, RE, LS, RS, tau=NULL, maxit=1000L, tol=1e-5, method="VB"){
   breaks <- setbreaks(LE, RE, LS, RS, tau=tau)
   RANK <- rankbreaks(LE, RE, LS, RS, breaks)
@@ -45,4 +65,8 @@ rand_cdf <- function(alpha, np, normalize=FALSE){
     out = normalize_cdf(out)
   } 
   return(out)
+}
+
+prob2ccdf <- function(h){
+  rev(cumsum(rev(h)))
 }

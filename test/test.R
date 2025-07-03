@@ -5,8 +5,9 @@ library(ggplot2)
 library(pammtools)
 library(reshape2)
 library(gridExtra)
+library(ggplot2)
+library(dplyr)
 #library(RColorBrewer)
-
 logsumexp <- function(x){
   mx <- max(x)
   mx + log(sum(exp(x-mx)))
@@ -19,15 +20,37 @@ Lambda <- function(x, sigma){
   x^sigma
 }
 
-trueparam <- list(shape=1.5, scale=3)
+trueparam <- list(shape=1.5, scale=5)
 sigma <- 1
 tau <- 100L
-set.seed(5889)
+set.seed(559)
 at = weibull_process(tau, shape = sigma, maxit = 10000)
-y <- rgamma(length(at), trueparam$shape, scale = trueparam$scale)
+y <- rweibull(length(at), trueparam$shape, scale = trueparam$scale)
 mean(y)
-simDat0 <- simDIC(y, at = at)
-simDat <- simDat0[simDat0$RS<tau, ]
+simDat0 <- simDIC(y, at = at, WS = 1, WE = 1)
+simDat <- simDat0
+
+system.time({
+  est <- conditionalfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
+                            maxit=100L, tol=1e-8, method = "VB")
+})
+
+system.time({
+  est2 <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
+                       maxit=100L, tol=1e-8, method = "EM")
+})
+
+#wch = which(est2$alpha > .Machine$double.eps)
+image(est$event)
+plot(est$logprob[-1], type = "l")
+
+plot(est$breaks, prob2ccdf(est$incubation), type="s", col="royalblue", xlim = c(0,40))
+curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale, lower.tail = FALSE), add=TRUE, lty=2)
+
+plot(est2$breaks, prob2ccdf(est2$incubation), type="s", col="royalblue", xlim = c(0,40))
+curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale, lower.tail = FALSE), add=TRUE, lty=2)
+
+#####
 
 system.time({
   est <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
@@ -41,9 +64,9 @@ system.time({
 
 plot(est$logprob[-1], type = "l")
 
-plot(est$breaks, cumsum(est$incubation), type="s", col="royalblue")
+plot(est$breaks, cumsum(est$incubation), type="s", col="royalblue", xlim = c(0,10))
 lines(est2$breaks, cumsum(est2$incubation), type="s", col="orangered")
-curve(pgamma(x, shape = trueparam$shape, scale = trueparam$scale), add=TRUE, lty=2)
+curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale), add=TRUE, lty=2)
 
 plot(est$logprob, type="l")
 dim(simDat0)
