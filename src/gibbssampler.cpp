@@ -17,7 +17,6 @@ arma::vec prob_sample(const arma::vec& x) {
   return out;
 }
 
-
 arma::vec freq_sample(const arma::vec& x) {
   int n = x.n_elem;
   arma::vec hs(n);
@@ -36,16 +35,19 @@ arma::vec colmarginal_cpp(const arma::mat & x) {
   return arma::cumsum(arma::sum(x, 1));
 }
 
-// Core sampler logic
-arma::ivec rcate(int size, arma::vec prob) {
+//////////
+/// Core sampler logic
+//////////
+
+arma::vec rcate(int size, arma::vec prob) {
   int K = prob.n_elem;
-  arma::ivec out(K, fill::zeros);
+  arma::vec out(K, fill::zeros);
   arma::vec cumprob = cumsum(prob / sum(prob));
   for (int i = 0; i < size; ++i) {
     double u = R::runif(0.0, 1.0);
     for (int k = 0; k < K; ++k) {
       if (u < cumprob[k]) {
-        out[k]++;
+        out(k) = 1.0;
         break;
       }
     }
@@ -53,7 +55,7 @@ arma::ivec rcate(int size, arma::vec prob) {
   return out;
 }
 
-arma::sp_mat asample(int le_rank, int re_rank, int ls_rank, int rs_rank,
+arma::vec asample(int le_rank, int re_rank, int ls_rank, int rs_rank,
                          const arma::vec& h, const arma::vec& lam) {
   int m = lam.n_elem;
   arma::sp_mat a(m, m);
@@ -67,7 +69,7 @@ arma::sp_mat asample(int le_rank, int re_rank, int ls_rank, int rs_rank,
   if(den > 0.0){
     a /= den;    
   }
-  return a;
+  return ;
 }
 
 
