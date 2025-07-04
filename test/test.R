@@ -28,29 +28,7 @@ at = weibull_process(tau, shape = sigma, maxit = 10000)
 y <- rweibull(length(at), trueparam$shape, scale = trueparam$scale)
 mean(y)
 simDat0 <- simDIC(y, at = at, WS = 1, WE = 1)
-simDat <- simDat0
-
-system.time({
-  est <- conditionalfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
-                            maxit=100L, tol=1e-8, method = "VB")
-})
-
-system.time({
-  est2 <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
-                       maxit=100L, tol=1e-8, method = "EM")
-})
-
-#wch = which(est2$alpha > .Machine$double.eps)
-image(est$event)
-plot(est$logprob[-1], type = "l")
-
-plot(est$breaks, prob2ccdf(est$incubation), type="s", col="royalblue", xlim = c(0,40))
-curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale, lower.tail = FALSE), add=TRUE, lty=2)
-
-plot(est2$breaks, prob2ccdf(est2$incubation), type="s", col="royalblue", xlim = c(0,40))
-curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale, lower.tail = FALSE), add=TRUE, lty=2)
-
-#####
+simDat <- simDat0[simDat0$RS < tau,]
 
 system.time({
   est <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,

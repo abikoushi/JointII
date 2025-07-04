@@ -81,9 +81,7 @@ double vpar_up0(arma::vec & alpha_h,
   alpha_h.fill(0.0);
   double lp = 0.0;
   for(int e=0; e<m-1; e++){
-    //Rprintf("e %d\n", e);
     for(int s=(e+1); s<m; s++){
-      //Rprintf("s %d\n", s);
       alpha_h(s-e) += A(e,s);
       if(h(s-e) > 0.0){
         lp += A(e,s)*log(h(s-e));
@@ -91,10 +89,6 @@ double vpar_up0(arma::vec & alpha_h,
     }
   }
   h = expmeanlog(alpha_h);
-  //logh = meanlog(alpha_h);
-  //loglam = meanlog(alpha_l);
-  //lp = sumxy(alpha_h, logh) + sumxy(alpha_l, loglam);
-  //double lp = sumxlogy(alpha_h, h) + sumxlogy(alpha_l, lam);
   return lp;
 }
 
