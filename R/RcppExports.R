@@ -13,6 +13,10 @@ conditional_DIC_gibbs <- function(EL, ER, SL, SR, m, iter) {
     .Call(`_JointII_conditional_DIC_gibbs`, EL, ER, SL, SR, m, iter)
 }
 
+joint_DIC_gibbs <- function(EL, ER, SL, SR, m, iter) {
+    .Call(`_JointII_joint_DIC_gibbs`, EL, ER, SL, SR, m, iter)
+}
+
 joint_DIC_em <- function(EL, ER, SL, SR, m, maxit, tol) {
     .Call(`_JointII_joint_DIC_em`, EL, ER, SL, SR, m, maxit, tol)
 }

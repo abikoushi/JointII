@@ -64,6 +64,18 @@ jointfit_dic <- function(LE, RE, LS, RS, tau=NULL, maxit=1000L, tol=1e-5, method
   return(res)
 }
 
+joint_dic_gibbs <- function(LE, RE, LS, RS, tau=NULL,iter=1000L){
+  breaks <- setbreaks(LE, RE, LS, RS, tau=tau)
+  RANK <- rankbreaks(LE, RE, LS, RS, breaks)
+  #the index is 0-origin in cpp
+  res <- with(RANK, joint_DIC_gibbs(LE-1L, RE-1L, LS-1L, RS-1L, 
+                                    m = length(breaks),
+                                    iter = iter))
+  res$logprob <- res$logprob[-1]
+  res$breaks <- breaks
+  return(res)
+}
+
 normalize_cdf <- function(rand){
   sweep(rand,2,rand[nrow(rand),],"/")
 }

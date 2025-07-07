@@ -40,7 +40,21 @@ system.time({
                       maxit=100L, tol=1e-8, method = "EM")
 })
 
-plot(est$logprob[-1], type = "l")
+system.time({
+  res <- joint_dic_gibbs(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
+                       iter=100L)
+})
+
+plot(res$logprob, type = "l")
+
+dim(res$incubation)
+
+Fhat = rowMeans(1-apply(res$incubation[,51:100],2,cumsum))
+plot(res$breaks, Fhat, type="s", col="royalblue", xlim = c(0,40))
+curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale, lower.tail = FALSE), add=TRUE, lty=2)
+
+Fhat = rowMeans(apply(res$infection[,51:100],2,cumsum))
+plot(res$breaks, Fhat, type="s", col="royalblue", xlim = c(0,40))
 
 plot(est$breaks, cumsum(est$incubation), type="s", col="royalblue", xlim = c(0,10))
 lines(est2$breaks, cumsum(est2$incubation), type="s", col="orangered")

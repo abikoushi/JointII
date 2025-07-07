@@ -9,7 +9,7 @@ arma::vec prob_sample(const arma::vec& x) {
   int n = x.n_elem;
   arma::vec out(n);
   for(int i = 0; i < n; ++i){
-    out[i] = (x[i] > 0.0) ? R::rgamma(x[i], 1.0) : 0.0;
+    out(i) = (x(i) > 0.0) ? R::rgamma(x(i), 1.0) : 0.0;
   }
   double total = arma::sum(out);
   if (total > 0.0)
@@ -21,7 +21,7 @@ arma::vec freq_sample(const arma::vec& x) {
   int n = x.n_elem;
   arma::vec hs(n);
   for(int i = 0; i < n; ++i){
-    hs[i] = (x[i] > 0.0) ? R::rgamma(x[i], 1.0) : 0.0;
+    hs(i) = (x(i) > 0.0) ? R::rgamma(x(i), 1.0) : 0.0;
   }
   return arma::cumsum(hs);
 }
@@ -39,7 +39,7 @@ arma::vec colmarginal_cpp(const arma::mat & x) {
 /// Core sampler logic
 //////////
 
-arma::sp_mat rcate(arma::sp_mat & A) {
+arma::sp_mat rcate(const int & size , const arma::sp_mat & A) {
   std::vector<double> vals;
   std::vector<arma::uword> rows, cols;
   for (arma::sp_mat::const_iterator it = A.begin(); it != A.end(); ++it) {
@@ -52,20 +52,27 @@ arma::sp_mat rcate(arma::sp_mat & A) {
   arma::uvec col_vec(cols);
   int K = prob.n_elem;
   int pos;
-  arma::vec cumprob = cumsum(prob / sum(prob));
+  arma::sp_mat out(A.n_rows, A.n_cols);
+  for(int it=0; it< size; it++){
+    arma::vec cumprob = cumsum(prob / sum(prob));
     double u = R::runif(0.0, 1.0);
     for (int k = 0; k < K; ++k) {
       if (u < cumprob(k)) {
         pos = k;
         break;
       }
+    }
+    out(row_vec(pos), col_vec(pos)) += 1.0;    
   }
-  arma::sp_mat out(A.n_rows, A.n_cols);
-  out(row_vec(pos), col_vec(pos)) = 1.0;
   return out;
 }
 
-arma::sp_mat asample(int le_rank, int re_rank, int ls_rank, int rs_rank,
+//////////
+/// conditional
+//////////
+
+arma::sp_mat asample0(int le_rank, int re_rank,
+                     int ls_rank, int rs_rank,
                     const arma::vec& h) {
   int m = h.n_elem;
   arma::sp_mat a(m, m);
@@ -79,23 +86,23 @@ arma::sp_mat asample(int le_rank, int re_rank, int ls_rank, int rs_rank,
   if(den > 0.0){
     a /= den;    
   }
-  return rcate(a);
+  return rcate(1, a);
 }
 
 
-void Asample(arma::sp_mat & a,
+void Asample0(arma::sp_mat & a,
              const arma::uvec& le_rank, const arma::uvec& re_rank,
              const arma::uvec& ls_rank, const arma::uvec& rs_rank,
              const arma::vec& h) {
   int m = h.n_elem;
   arma::sp_mat A(m, m);
   for(int i = 0; i < rs_rank.n_elem; ++i){
-    A += asample(le_rank(i), re_rank(i), ls_rank(i), rs_rank(i), h);
+    A += asample0(le_rank(i), re_rank(i), ls_rank(i), rs_rank(i), h);
   }
   a = A;
 }
 
-double par_sample(arma::vec & alpha_h,
+double par_sample0(arma::vec & alpha_h,
                 arma::vec & h,
                 const arma::sp_mat & A) {
   int m = h.n_rows;
@@ -127,21 +134,56 @@ List conditional_DIC_gibbs(const arma::uvec & EL,
   arma::vec lp = arma::zeros<arma::vec>(iter);
   lp(0) = -std::numeric_limits<double>::max();
   for(int it = 0; it < iter; it++){
-    Asample(A, EL, ER, SL, SR, h);
-    lp(it) = par_sample(alpha_h, h, A);
+    Asample0(A, EL, ER, SL, SR, h);
+    lp(it) = par_sample0(alpha_h, h, A);
     hhist.col(it) = h;
   }
   return List::create(_["incubation"]=hhist,
                       _["logprob"]=lp);
 }
 
-/*
+//////////
+/// joint
+//////////
+
+arma::sp_mat asample(int le_rank, int re_rank,
+                      int ls_rank, int rs_rank,
+                      const arma::vec& h,
+                      const arma::vec& lam) {
+  int m = h.n_elem;
+  arma::sp_mat a(m, m);
+  for(int i = le_rank; i < re_rank; ++i){
+    int start = std::max(ls_rank, i + 1);
+    for(int j = start; j < rs_rank; ++j){
+      a(i,j) += h(j-i)*lam(i);
+    }
+  }
+  double den = arma::accu(a);
+  if(den > 0.0){
+    a /= den;    
+  }
+  return rcate(1, a);
+}
+
+void Asample(arma::sp_mat & a,
+              const arma::uvec& le_rank, const arma::uvec& re_rank,
+              const arma::uvec& ls_rank, const arma::uvec& rs_rank,
+              const arma::vec& h, const arma::vec& lam) {
+  int m = h.n_elem;
+  arma::sp_mat A(m, m);
+  for(int i = 0; i < rs_rank.n_elem; ++i){
+    A += asample(le_rank(i), re_rank(i), ls_rank(i), rs_rank(i), h, lam);
+  }
+  a = A;
+}
+
 arma::sp_mat bsample(int le_rank, int re_rank, int ls_rank, int rs_rank,
                          const arma::vec& h, const arma::vec& lam) {
   int m = lam.n_elem;
   arma::sp_mat B(m, m);
+  arma::sp_mat out(m, m);
   arma::vec rho(2, fill::zeros);
-  for(int i = le_rank; i <= re_rank; ++i){
+  for(int i = le_rank; i < re_rank; ++i){
     int start = std::max(ls_rank, i + 1);
     for(int j = start; j <= rs_rank; ++j){
       int cutoff = m - (rs_rank - (j - i));
@@ -160,23 +202,80 @@ arma::sp_mat bsample(int le_rank, int re_rank, int ls_rank, int rs_rank,
   double denb = arma::accu(B);
   if(denb > 0){
     int b = 0;
-    if(rho[1] > 0 && rho[1] < 1)
-    b = R::rgeom(rho[1]);
-    
-    B /= accu(B);
+    if(rho(1) > 0 && rho(1) < 1)
+    b = R::rgeom(rho(1));
+    if(b>0){
+      B /= accu(B);
+      out = rcate(b , B);      
+    }
   }
-  return B;
+  return out;
 }
 
 void Bsample(arma::sp_mat& b,
-             const arma::ivec& le_rank, const arma::ivec& re_rank,
-             const arma::ivec& ls_rank, const arma::ivec& rs_rank,
+             const arma::uvec& le_rank, const arma::uvec& re_rank,
+             const arma::uvec& ls_rank, const arma::uvec& rs_rank,
              const arma::vec& h, const arma::vec& lam) {
   int m = h.n_elem;
   arma::sp_mat B(m, m);
   for(int i = 0; i < re_rank.n_elem; ++i){
-    B += bsample(le_rank[i], re_rank[i], ls_rank[i], rs_rank[i], h, lam);
+    B += bsample(le_rank(i), re_rank(i), ls_rank(i), rs_rank(i), h, lam);
   }
   b = B;
 }
-*/
+
+double par_sample(arma::vec & alpha_h,
+                   arma::vec & h,
+                   arma::vec & beta_l,
+                   arma::vec & lam,
+                   const arma::sp_mat & A,
+                   const arma::sp_mat & B) {
+  int m = h.n_rows;
+  alpha_h.fill(0.0);
+  beta_l.fill(0.0);
+  double lp = 0.0;
+  for(int e=0; e < (m-1); e++){
+    for(int s=(e+1); s<m; s++){
+      alpha_h(s-e) += A(e,s) + B(e,s);
+      beta_l(e) += A(e,s) + B(e,s);
+      if(h(s-e) > 0.0){
+        lp += (A(e,s)+B(e,s))*log(h(s-e));
+      }
+      if(lam(e) > 0.0){
+        lp += (A(e,s)+B(e,s))*log(lam(e));
+      }
+    }
+  }
+  h = prob_sample(alpha_h);
+  lam = prob_sample(beta_l);
+  return lp;
+}
+
+// [[Rcpp::export]]
+List joint_DIC_gibbs(const arma::uvec & EL,
+                           const arma::uvec & ER,
+                           const arma::uvec & SL,
+                           const arma::uvec & SR,
+                           const int & m,
+                           const int & iter) {
+  arma::vec alpha_h = arma::ones<arma::vec>(m);
+  arma::vec h = alpha_h/sum(alpha_h);
+  arma::vec beta_l = arma::ones<arma::vec>(m);
+  arma::vec lam = alpha_h/sum(alpha_h);
+  arma::mat hhist(m,iter);
+  arma::mat lamhist(m,iter);
+  arma::sp_mat A(m,m);
+  arma::sp_mat B(m,m);
+  arma::vec lp = arma::zeros<arma::vec>(iter);
+  lp(0) = -std::numeric_limits<double>::max();
+  for(int it = 0; it < iter; it++){
+    Asample(A, EL, ER, SL, SR, h, lam);
+    Bsample(B, EL, ER, SL, SR, h, lam);
+    lp(it) = par_sample(alpha_h, h, beta_l, lam, A, B);
+    hhist.col(it) = h;
+    lamhist.col(it) = freq_sample(beta_l);
+  }
+  return List::create(_["incubation"]=hhist,
+                      _["infection"]=lamhist,
+                      _["logprob"]=lp);
+}
