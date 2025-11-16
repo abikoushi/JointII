@@ -13,23 +13,54 @@ logsumexp <- function(x){
   mx + log(sum(exp(x-mx)))
 }
 
-# logsumexp(1:10)
-# log(sum(exp(1:10)))
+weibull_process = function(tau, shape, maxit){
+  w = numeric(maxit)
+  z = runif(1)
+  at =  (-log(z))^(1/shape) 
+  if(maxit >= 2){
+    for(i in 1:maxit){
+      z = runif(1)
+      at =  ( (-log(z))^(1/shape) + at^shape)^(1/shape)
+      w[i] = at
+      if(at>tau){
+        break
+      }
+    }    
+  }
+  return(w[1:i])
+}
 
 Lambda <- function(x, sigma){
   x^sigma
 }
 
 trueparam <- list(shape=1.5, scale=5)
-sigma <- 1
+sigma <- 0.9
 tau <- 100L
-set.seed(559)
+set.seed(55)
+curve(Lambda(x,sigma),0,100)
 at = weibull_process(tau, shape = sigma, maxit = 10000)
+lines(at[-1], 1:length(at[-1]), type = "s", col="grey")
+
 y <- rweibull(length(at), trueparam$shape, scale = trueparam$scale)
-mean(y)
+
+WE=1
+WS=1
+simDIC <- function(y,at,WS,WE){
+  S <- at+y
+  ue = runif(length(at))
+  us = runif(length(at))
+  LE = pmax(0, at - WE * (1 - ue))
+  LS = pmax(LE, S - WS * (1 - us))
+  RS = S + WS * us
+  RE = pmin(RS, at + WE * ue)
+  data.frame(LE,LS,RE,RS)  
+}
+
+
 simDat0 <- simDIC(y, at = at, WS = 1, WE = 1)
 simDat <- simDat0[simDat0$RS < tau,]
-
+dim(simDat)
 system.time({
   est <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
                       maxit=100L, tol=1e-8, method = "VB")
