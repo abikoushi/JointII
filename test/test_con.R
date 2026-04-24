@@ -52,12 +52,14 @@ system.time({
                              maxit=100L, tol=1e-8, method = "VB")
 })
 
+est2$logprob
 #wch = which(est2$alpha > .Machine$double.eps)
 
 plot(est1$logprob[-1], type = "l")
 plot(est2$logprob[-1], type = "l")
 
 plot(est1$breaks, prob2ccdf(est1$incubation), type="s", col="royalblue", xlim = c(0,40))
-lines(est2$breaks, prob2ccdf(est2$incubation), type="s", col="orangered", xlim = c(0,40))
+lines(est2$breaks, prob2ccdf(est2$incubation), type="s", col="forestgreen", xlim = c(0,40))
+lines(res$breaks, Fhat, col="orange", type="s")
 curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale, lower.tail = FALSE), add=TRUE, lty=2)
-lines(res$breaks, Fhat)
+

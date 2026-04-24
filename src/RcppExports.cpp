@@ -45,6 +45,18 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// rcate
+arma::sp_mat rcate(const int& size, const arma::sp_mat& A);
+RcppExport SEXP _JointII_rcate(SEXP sizeSEXP, SEXP ASEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< const int& >::type size(sizeSEXP);
+    Rcpp::traits::input_parameter< const arma::sp_mat& >::type A(ASEXP);
+    rcpp_result_gen = Rcpp::wrap(rcate(size, A));
+    return rcpp_result_gen;
+END_RCPP
+}
 // conditional_DIC_gibbs
 List conditional_DIC_gibbs(const arma::uvec& EL, const arma::uvec& ER, const arma::uvec& SL, const arma::uvec& SR, const int& m, const int& iter);
 RcppExport SEXP _JointII_conditional_DIC_gibbs(SEXP ELSEXP, SEXP ERSEXP, SEXP SLSEXP, SEXP SRSEXP, SEXP mSEXP, SEXP iterSEXP) {
@@ -127,6 +139,7 @@ END_RCPP
 static const R_CallMethodDef CallEntries[] = {
     {"_JointII_conditional_DIC_em", (DL_FUNC) &_JointII_conditional_DIC_em, 7},
     {"_JointII_conditional_DIC_vb", (DL_FUNC) &_JointII_conditional_DIC_vb, 7},
+    {"_JointII_rcate", (DL_FUNC) &_JointII_rcate, 2},
     {"_JointII_conditional_DIC_gibbs", (DL_FUNC) &_JointII_conditional_DIC_gibbs, 6},
     {"_JointII_joint_DIC_gibbs", (DL_FUNC) &_JointII_joint_DIC_gibbs, 6},
     {"_JointII_joint_DIC_em", (DL_FUNC) &_JointII_joint_DIC_em, 7},

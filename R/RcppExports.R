@@ -9,6 +9,10 @@ conditional_DIC_vb <- function(EL, ER, SL, SR, m, maxit, tol) {
     .Call(`_JointII_conditional_DIC_vb`, EL, ER, SL, SR, m, maxit, tol)
 }
 
+rcate <- function(size, A) {
+    .Call(`_JointII_rcate`, size, A)
+}
+
 conditional_DIC_gibbs <- function(EL, ER, SL, SR, m, iter) {
     .Call(`_JointII_conditional_DIC_gibbs`, EL, ER, SL, SR, m, iter)
 }

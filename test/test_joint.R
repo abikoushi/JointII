@@ -7,7 +7,15 @@ library(reshape2)
 library(gridExtra)
 library(ggplot2)
 library(dplyr)
-#library(RColorBrewer)
+
+# x <- rgamma(10,1)
+# x <- x/sum(x)
+# X <- sparseMatrix(i = 1:10, j = 1:10, x = x)
+# res <- JointII:::rcate(10000,X)
+# 
+# plot(diag(X),diag(res)/sum(diag(res)))
+# abline(0,1)
+
 logsumexp <- function(x){
   mx <- max(x)
   mx + log(sum(exp(x-mx)))
@@ -20,7 +28,7 @@ weibull_process = function(tau, shape, maxit){
   if(maxit >= 2){
     for(i in 1:maxit){
       z = runif(1)
-      at =  ( (-log(z))^(1/shape) + at^shape)^(1/shape)
+      at =  (-log(z) + at^shape)^(1/shape)
       w[i] = at
       if(at>tau){
         break
@@ -33,19 +41,6 @@ weibull_process = function(tau, shape, maxit){
 Lambda <- function(x, sigma){
   x^sigma
 }
-
-trueparam <- list(shape=1.5, scale=5)
-sigma <- 0.9
-tau <- 100L
-set.seed(55)
-curve(Lambda(x,sigma),0,100)
-at = weibull_process(tau, shape = sigma, maxit = 10000)
-lines(at[-1], 1:length(at[-1]), type = "s", col="grey")
-
-y <- rweibull(length(at), trueparam$shape, scale = trueparam$scale)
-
-WE=1
-WS=1
 simDIC <- function(y,at,WS,WE){
   S <- at+y
   ue = runif(length(at))
@@ -57,44 +52,66 @@ simDIC <- function(y,at,WS,WE){
   data.frame(LE,LS,RE,RS)  
 }
 
+trueparam <- list(shape=1.5, scale=10)
+sigma <- 1.0
+tau <- 100L
+set.seed(1111)
+curve(Lambda(x,sigma),0,100)
+at = weibull_process(tau, shape = sigma, maxit = 10000)
+lines(at[-1], 1:length(at[-1]), type = "s", col="grey")
+
+y <- rweibull(length(at), trueparam$shape, scale = trueparam$scale)
+
+WE=1
+WS=1
+
 
 simDat0 <- simDIC(y, at = at, WS = 1, WE = 1)
 simDat <- simDat0[simDat0$RS < tau,]
-dim(simDat)
+
 system.time({
   est <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
-                      maxit=100L, tol=1e-8, method = "VB")
+                      maxit=10L, tol=1e-8, method = "VB")
 })
+
+est$logprob
+plot(est$breaks, cumsum(est$incubation), type="s")
+
+
 
 system.time({
   est2 <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
                       maxit=100L, tol=1e-8, method = "EM")
 })
 
+plot(est2$breaks, cumsum(est2$incubation), type="s")
+curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale), add=TRUE, lty=2)
+
 system.time({
   res <- joint_dic_gibbs(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
-                       iter=100L)
+                       iter=1000L)
 })
 
 plot(res$logprob, type = "l")
 
 dim(res$incubation)
 
-Fhat = rowMeans(1-apply(res$incubation[,51:100],2,cumsum))
-plot(res$breaks, Fhat, type="s", col="royalblue", xlim = c(0,40))
+burnin <- 1:100
+Shat = rowMeans(1-apply(res$incubation[,-burnin],2,cumsum))
+plot(res$breaks, Shat, type="s", col="royalblue", xlim = c(0,100))
 curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale, lower.tail = FALSE), add=TRUE, lty=2)
 
-Fhat = rowMeans(apply(res$infection[,51:100],2,cumsum))
-plot(res$breaks, Fhat, type="s", col="royalblue", xlim = c(0,40))
 
-plot(est$breaks, cumsum(est$incubation), type="s", col="royalblue", xlim = c(0,10))
-lines(est2$breaks, cumsum(est2$incubation), type="s", col="orangered")
-curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale), add=TRUE, lty=2)
+Lamhat = rowMeans(res$infection[,51:100])
+plot(res$breaks, Lamhat, type="s", col="royalblue", xlim = c(0,100))
+abline(0,1)
 
-plot(est$logprob, type="l")
-dim(simDat0)
-dim(simDat)
+plot(est$breaks, 1-cumsum(est$incubation), type="s", col="royalblue", xlim = c(0,30))
+plot(est2$breaks, 1-cumsum(est2$incubation), type="s", col="orangered")
+lines(res$breaks, Shat, type="s", col="forestgreen")
+curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale, lower.tail = FALSE), add=TRUE, lty=2)
 
+####
 df_post <- IIdf(est)
 ggplot(df_post, aes(x=time))+
   geom_step(aes(y=cuminf, colour="not tuncated"))+

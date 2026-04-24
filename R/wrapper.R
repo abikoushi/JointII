@@ -28,7 +28,7 @@ conditionalfit_dic <- function(LE, RE, LS, RS,
                                     m = length(breaks), maxit = maxit, tol = tol))    
   }else{
     warning("this method is not implemented")
-    break
+    #break
   }
   res$logprob <- res$logprob[-1]
   res$breaks <- breaks
@@ -57,7 +57,7 @@ jointfit_dic <- function(LE, RE, LS, RS, tau=NULL, maxit=1000L, tol=1e-5, method
                                    m = length(breaks), maxit = maxit, tol = tol))    
   }else{
     warning("this method is not implemented")
-    break
+    #break
   }
   res$logprob <- res$logprob[-1]
   res$breaks <- breaks

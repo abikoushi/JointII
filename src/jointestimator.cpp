@@ -24,21 +24,6 @@ double par_up(arma::vec & alpha_h, arma::vec & beta_l,
   return lp;
 }
 
-// arma::sp_mat a_upsub(const arma::vec & logh, const arma::vec & loglam,
-//                      const int & lerank, const int & rerank,
-//                      const int & lsrank, const int & rsrank) {
-//   arma::sp_mat a(logh.n_rows, logh.n_rows);
-//   for(int e=lerank; e<rerank; e++){
-//     int sta = std::max(lsrank, e+1);
-//     for(int s=sta; s<rsrank; s++){
-//       a(e,s) += exp(logh(s-e) + loglam(e));
-//     }
-//   }
-//   double den = arma::accu(a);
-//   a /= den;
-//   return a;
-// }
-
 arma::sp_mat a_upsub(const arma::vec & h, const arma::vec & lam,
                      const int & lerank, const int & rerank,
                      const int & lsrank, const int & rsrank) {
@@ -66,42 +51,6 @@ void Aup(arma::sp_mat & A,
   }
 }
 
-
-/*
-arma::sp_mat b_upsub(const arma::vec & logh, const arma::vec & loglam,
-                     const int & lerank, const int & rerank,
-                     const int & lsrank, const int & rsrank){
-  arma::sp_mat b = arma::sp_mat(logh.n_rows, logh.n_rows);
-  arma::vec rho = arma::zeros<arma::vec>(2);
-  //convolution
-  for(int e = lerank; e<rerank; e++){
-    int start = std::max(lsrank, e+1);
-    for(int s=start; s<rsrank; s++){
-      int split = logh.n_rows-(rsrank-(s-e))-1;
-      //Rprintf("%d ", split);
-      //rho(0) += lam(e)*sum(h.rows(0, split));
-      //rho(1) += lam(e)*sum(h.rows(split+1, h.n_rows-1));
-      rho(0) += exp(loglam(e) + logsumexp(logh.rows(0, split)));
-      rho(1) += exp(loglam(e) + logsumexp(logh.rows(split+1, logh.n_rows-1)));
-    }
-  }
-  rho /= sum(rho);
-  //expectation
-  int end = std::min(rsrank, rerank);
-  for(int e=lerank; e<end; e++){
-    for(int s=(rsrank+1); s<logh.n_rows; s++){
-      b(e,s) += exp(logh(s-e));
-    }
-  }
-  double sb = arma::accu(b);
-  if(sb > 0.0 && rho(0) > 0.0){
-    b /= sb;
-    b *= rho(1)/rho(0);
-  }
- return b;
-}
-*/
-
 arma::sp_mat b_upsub(const arma::vec & h, const arma::vec & lam,
                      const int & lerank, const int & rerank,
                      const int & lsrank, const int & rsrank){
@@ -110,13 +59,14 @@ arma::sp_mat b_upsub(const arma::vec & h, const arma::vec & lam,
   for(int e = lerank; e < rerank; e++){
     int start = std::max(lsrank, e+1);
     for(int s = start; s < rsrank; s++){
-      int split = h.n_rows-(rsrank-(s-e))-1;
-      rho(0) += lam(e) * sum(h.rows(0, split));
-      rho(1) += lam(e) * sum(h.rows(split + 1, h.n_rows-1));
+      int split = h.n_rows - (rsrank- (s-e));
+      rho(0) += lam(e) * sum(h.rows(0, split - 1));
+      rho(1) += lam(e) * sum(h.rows(split, h.n_rows - 1));
     }
   }
   //expectation
   arma::sp_mat b = arma::sp_mat(h.n_rows, h.n_rows);
+  arma::sp_mat out = arma::sp_mat(h.n_rows, h.n_rows);
   int end = std::min(rsrank, rerank);
   for(int e=lerank; e<end; e++){
     for(int s=(rsrank+1); s<h.n_rows; s++){
@@ -124,12 +74,13 @@ arma::sp_mat b_upsub(const arma::vec & h, const arma::vec & lam,
     }
   }
   double sb = arma::accu(b);
-  if(sb > 0.0 && rho(0) > 0.0){
+  if(sb > 0.0){
     rho /= sum(rho);
     b /= sb;
     b *= rho(1)/rho(0);
+    out = b;
   }
-  return b;
+  return out;
 }
 
 void Bup(arma::sp_mat & B,
@@ -207,10 +158,6 @@ double vpar_up(arma::vec & alpha_h, arma::vec & alpha_l,
   }
   h = expmeanlog(alpha_h);
   lam = expmeanlog(alpha_l);
-  //logh = meanlog(alpha_h);
-  //loglam = meanlog(alpha_l);
-  //lp = sumxy(alpha_h, logh) + sumxy(alpha_l, loglam);
-  //double lp = sumxlogy(alpha_h, h) + sumxlogy(alpha_l, lam);
   return lp;
 }
 
