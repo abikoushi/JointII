@@ -71,9 +71,11 @@ simDat <- simDat0[simDat0$RS < tau,]
 
 system.time({
   est <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
-                      maxit=10L, tol=1e-8, method = "VB")
+                      maxit=100L, tol=1e-8, method = "VB")
 })
 
+which(is.nan(est$alpha))
+which(is.nan(est$beta))
 est$logprob
 plot(est$breaks, cumsum(est$incubation), type="s")
 
@@ -107,7 +109,7 @@ plot(res$breaks, Lamhat, type="s", col="royalblue", xlim = c(0,100))
 abline(0,1)
 
 plot(est$breaks, 1-cumsum(est$incubation), type="s", col="royalblue", xlim = c(0,30))
-plot(est2$breaks, 1-cumsum(est2$incubation), type="s", col="orangered")
+lines(est2$breaks, 1-cumsum(est2$incubation), type="s", col="orangered")
 lines(res$breaks, Shat, type="s", col="forestgreen")
 curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale, lower.tail = FALSE), add=TRUE, lty=2)
 

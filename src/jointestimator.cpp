@@ -74,11 +74,14 @@ arma::sp_mat b_upsub(const arma::vec & h, const arma::vec & lam,
     }
   }
   double sb = arma::accu(b);
-  if(sb > 0.0){
-    rho /= sum(rho);
+  double sr = sum(rho);
+  if(sb > 0.0 && sr > 0.0){
     b /= sb;
-    b *= rho(1)/rho(0);
-    out = b;
+    rho /= sr;
+    if(rho(0) > 0.0 && rho(0)< 1.0){
+      b *= rho(1)/rho(0);
+      out = b;      
+    }
   }
   return out;
 }
