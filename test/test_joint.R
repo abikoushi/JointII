@@ -7,14 +7,11 @@ library(reshape2)
 library(gridExtra)
 library(ggplot2)
 library(dplyr)
-
-# x <- rgamma(10,1)
-# x <- x/sum(x)
-# X <- sparseMatrix(i = 1:10, j = 1:10, x = x)
-# res <- JointII:::rcate(10000,X)
-# 
-# plot(diag(X),diag(res)/sum(diag(res)))
-# abline(0,1)
+library(JuliaCall)
+juliapath <- scan("path.txt", what = character())
+julia <- julia_setup(JULIA_HOME = juliapath[1])
+julia_source(juliapath[2])
+julia_source(juliapath[3])
 
 logsumexp <- function(x){
   mx <- max(x)
@@ -70,43 +67,59 @@ simDat0 <- simDIC(y, at = at, WS = 1, WE = 1)
 simDat <- simDat0[simDat0$RS < tau,]
 
 system.time({
-  est <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
-                      maxit=100L, tol=1e-8, method = "VB")
+  est_vb <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
+                      maxit=1000L, tol=1e-8, method = "VB")
 })
+est_vb2 <- julia_call("jointtool.vb", simDat$LE, simDat$RE, simDat$LS, simDat$RS, tau)
 
-which(is.nan(est$alpha))
-which(is.nan(est$beta))
-est$logprob
-plot(est$breaks, cumsum(est$incubation), type="s")
 
+plot(est_vb$breaks, cumsum(est_vb$incubation), type="s")
+lines(est_vb2$value, cumsum(est_vb2$alpha/sum(est_vb2$alpha)), type="s", col="red")
+
+plot(est_vb$breaks, cumsum(est_vb$beta), type="s")
+lines(est_vb2$value, cumsum(est_vb2$beta), type="s", col="red")
 
 
 system.time({
-  est2 <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
-                      maxit=100L, tol=1e-8, method = "EM")
+  est_em <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
+                      maxit=1000L, tol=1e-8, method = "EM")
 })
 
-plot(est2$breaks, cumsum(est2$incubation), type="s")
-curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale), add=TRUE, lty=2)
+est_em2 <- julia_call("jointtool.EM", simDat$LE, simDat$RE, simDat$LS, simDat$RS, tau)
+
+plot(est_em$breaks, cumsum(est_em$incubation), type="s")
+lines(est_em2$value, cumsum(est_em2$alpha/sum(est_em2$alpha)), type="s", col="red")
+
+plot(est_em$breaks, cumsum(est_em$beta), type="s")
+lines(est_em2$value, cumsum(est_em2$beta), type="s", col="red")
+
 
 system.time({
   res <- joint_dic_gibbs(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
-                       iter=1000L)
+                       iter=2000L)
 })
 
-plot(res$logprob, type = "l")
-
-dim(res$incubation)
+res2 <- julia_call("jointest.gibbssampler", simDat$LE, simDat$RE, simDat$LS, simDat$RS, tau, 2000L)
 
 burnin <- 1:100
+plot(res$logprob, type = "l")
+lines(res2$logprob, type = "l", col="cornflowerblue")
+
 Shat = rowMeans(1-apply(res$incubation[,-burnin],2,cumsum))
+Shat2 = colMeans(res2$ccdf[-burnin,])
+
 plot(res$breaks, Shat, type="s", col="royalblue", xlim = c(0,100))
+lines(res2$value, Shat2, type="s", col="orange", xlim = c(0,100))
 curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale, lower.tail = FALSE), add=TRUE, lty=2)
 
 
 Lamhat = rowMeans(res$infection[,51:100])
+Lamhat2 = colMeans(res2$intensity[-burnin,])
 plot(res$breaks, Lamhat, type="s", col="royalblue", xlim = c(0,100))
+lines(res2$value, Lamhat2, type="s", col="orange", xlim = c(0,100))
 abline(0,1)
+
+####
 
 plot(est$breaks, 1-cumsum(est$incubation), type="s", col="royalblue", xlim = c(0,30))
 lines(est2$breaks, 1-cumsum(est2$incubation), type="s", col="orangered")

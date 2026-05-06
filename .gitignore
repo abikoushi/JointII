@@ -6,3 +6,4 @@ src/*.so
 src/*.dll
 .Rdata
 .positai
+path.txt
