@@ -154,9 +154,9 @@ arma::sp_mat asample(int le_rank, int re_rank,
   arma::sp_mat a(m, m);
   arma::sp_mat out(m, m);
   double den;
-  for(int i = le_rank; i < re_rank; ++i){
+  for(int i = le_rank; i <= re_rank; ++i){
     int start = std::max(ls_rank, i + 1);
-    for(int j = start; j < rs_rank; ++j){
+    for(int j = start; j <= rs_rank; ++j){
       a(i,j) += h(j-i)*lam(i);
     }
   }
@@ -186,7 +186,7 @@ arma::sp_mat bsample(int le_rank, int re_rank, int ls_rank, int rs_rank,
   arma::sp_mat B(m, m);
   arma::sp_mat out(m, m);
   arma::vec rho(2, fill::zeros);
-  for(int i = le_rank; i < re_rank; ++i){
+  for(int i = le_rank; i <= re_rank; ++i){
     int start = std::max(ls_rank, i + 1);
     for(int j = start; j <= rs_rank; ++j){
       int cutoff = m - (rs_rank - (j - i));

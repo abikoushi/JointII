@@ -62,17 +62,19 @@ y <- rweibull(length(at), trueparam$shape, scale = trueparam$scale)
 WE=1
 WS=1
 
-
 simDat0 <- simDIC(y, at = at, WS = 1, WE = 1)
 simDat <- simDat0[simDat0$RS < tau,]
-
+head(simDat)
 system.time({
   est_vb <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
                       maxit=1000L, tol=1e-8, method = "VB")
 })
-est_vb2 <- julia_call("jointtool.vb", simDat$LE, simDat$RE, simDat$LS, simDat$RS, tau)
+system.time({
+  est_vb2 <- julia_call("jointtool.vb", simDat$LE, simDat$RE, simDat$LS, simDat$RS, tau)  
+})
 
-
+plot(est_vb$logprob, type = "l")
+lines(est_vb2$logprob, type = "l")
 plot(est_vb$breaks, cumsum(est_vb$incubation), type="s")
 lines(est_vb2$value, cumsum(est_vb2$alpha/sum(est_vb2$alpha)), type="s", col="red")
 
@@ -84,8 +86,9 @@ system.time({
   est_em <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
                       maxit=1000L, tol=1e-8, method = "EM")
 })
-
-est_em2 <- julia_call("jointtool.EM", simDat$LE, simDat$RE, simDat$LS, simDat$RS, tau)
+system.time({
+  est_em2 <- julia_call("jointtool.EM", simDat$LE, simDat$RE, simDat$LS, simDat$RS, tau)  
+})
 
 plot(est_em$breaks, cumsum(est_em$incubation), type="s")
 lines(est_em2$value, cumsum(est_em2$alpha/sum(est_em2$alpha)), type="s", col="red")

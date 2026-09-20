@@ -23,7 +23,7 @@ Lambda <- function(x, sigma){
 trueparam <- list(shape=1.5, scale=5)
 sigma <- 1
 tau <- 100L
-set.seed(555)
+set.seed(12345)
 at = weibull_process(tau, shape = sigma, maxit = 10000)
 y <- rweibull(length(at), trueparam$shape, scale = trueparam$scale)
 mean(y)

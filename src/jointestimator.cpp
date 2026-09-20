@@ -28,9 +28,9 @@ arma::sp_mat a_upsub(const arma::vec & h, const arma::vec & lam,
                      const int & lerank, const int & rerank,
                      const int & lsrank, const int & rsrank) {
   arma::sp_mat a(h.n_rows, h.n_rows);
-  for(int e = lerank; e < rerank; e++){
+  for(int e = lerank; e <= rerank; e++){
     int sta = std::max(lsrank, e+1);
-    for(int s = sta; s < rsrank; s++){
+    for(int s = sta; s <= rsrank; s++){
       a(e,s) += h(s-e)*lam(e);
     }
   }
@@ -56,20 +56,21 @@ arma::sp_mat b_upsub(const arma::vec & h, const arma::vec & lam,
                      const int & lsrank, const int & rsrank){
   arma::vec rho = arma::zeros<arma::vec>(2);
   //convolution
-  for(int e = lerank; e < rerank; e++){
+  for(int e = lerank; e <= rerank; e++){
     int start = std::max(lsrank, e+1);
-    for(int s = start; s < rsrank; s++){
+    for(int s = start; s <= rsrank; s++){
       int split = h.n_rows - (rsrank- (s-e));
-      rho(0) += lam(e) * sum(h.rows(0, split - 1));
-      rho(1) += lam(e) * sum(h.rows(split, h.n_rows - 1));
+      if (split > 0) rho(0) += lam(e) * sum(h.rows(0, split - 1));
+      if (split < h.n_rows) rho(1) += lam(e) * sum(h.rows(split, h.n_rows - 1));
     }
   }
+  //Rprintf("convolution done\n");
   //expectation
   arma::sp_mat b = arma::sp_mat(h.n_rows, h.n_rows);
   arma::sp_mat out = arma::sp_mat(h.n_rows, h.n_rows);
   int end = std::min(rsrank, rerank);
   for(int e=lerank; e<end; e++){
-    for(int s=(rsrank+1); s<h.n_rows; s++){
+    for(int s = rsrank + 1; s<h.n_rows; s++){
       b(e,s) += h(s-e);
     }
   }
@@ -83,6 +84,7 @@ arma::sp_mat b_upsub(const arma::vec & h, const arma::vec & lam,
       out = b;      
     }
   }
+  //Rprintf("expectation done\n");
   return out;
 }
 
@@ -91,7 +93,7 @@ void Bup(arma::sp_mat & B,
          const arma::uvec & lerank, const arma::uvec & rerank,
          const arma::uvec & lsrank, const arma::uvec & rsrank){
   B = arma::sp_mat(B.n_rows, B.n_cols);
-  for(int i=0; i<lsrank.n_rows; i++){
+  for(int i=0; i < lsrank.n_rows; i++){
     B += b_upsub(h, lam, lerank(i), rerank(i), lsrank(i), rsrank(i));
   }
 }
