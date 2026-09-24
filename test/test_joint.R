@@ -52,7 +52,7 @@ simDIC <- function(y,at,WS,WE){
 trueparam <- list(shape=1.5, scale=10)
 sigma <- 1.0
 tau <- 100L
-set.seed(1111)
+set.seed(111)
 curve(Lambda(x,sigma),0,100)
 at = weibull_process(tau, shape = sigma, maxit = 10000)
 lines(at[-1], 1:length(at[-1]), type = "s", col="grey")
@@ -64,19 +64,26 @@ WS=1
 
 simDat0 <- simDIC(y, at = at, WS = 1, WE = 1)
 simDat <- simDat0[simDat0$RS < tau,]
-head(simDat)
+
 system.time({
   est_vb <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
-                      maxit=1000L, tol=1e-8, method = "VB")
+                      maxit=200L, tol=1e-8, method = "VB")
 })
 system.time({
-  est_vb2 <- julia_call("jointtool.vb", simDat$LE, simDat$RE, simDat$LS, simDat$RS, tau)  
+  est_vb2 <- julia_call("jointtool.vb", simDat$LE, simDat$RE, simDat$LS, simDat$RS, tau, 200L)
 })
 
 plot(est_vb$logprob, type = "l")
 lines(est_vb2$logprob, type = "l")
-plot(est_vb$breaks, cumsum(est_vb$incubation), type="s")
+#plot(est_vb$breaks, cumsum(est_vb$incubation), type="s")
+plot(est_vb$breaks, cumsum(est_vb$alpha/sum(est_vb$alpha)), type="s")
 lines(est_vb2$value, cumsum(est_vb2$alpha/sum(est_vb2$alpha)), type="s", col="red")
+
+plot(est_vb$breaks, cumsum(est_vb$alpha/sum(est_vb$alpha)), type="s")
+lines(est_vb2$value, cumsum(est_vb2$alpha/sum(est_vb2$alpha)), type="s", col="red")
+
+cbind(est_vb$alpha, est_vb2$alpha)
+cbind(est_vb$beta, est_vb2$beta)
 
 plot(est_vb$breaks, cumsum(est_vb$beta), type="s")
 lines(est_vb2$value, cumsum(est_vb2$beta), type="s", col="red")
@@ -96,6 +103,8 @@ lines(est_em2$value, cumsum(est_em2$alpha/sum(est_em2$alpha)), type="s", col="re
 plot(est_em$breaks, cumsum(est_em$beta), type="s")
 lines(est_em2$value, cumsum(est_em2$beta), type="s", col="red")
 
+cbind(est_em$alpha, est_em2$alpha)
+cbind(est_em$beta, est_em2$beta)
 
 system.time({
   res <- joint_dic_gibbs(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,

@@ -12,9 +12,9 @@ double par_up(arma::vec & alpha_h, arma::vec & beta_l,
   alpha_h.fill(0);
   beta_l.fill(0);
   double lp = 0;
-  for(int e=0; e < (m-1); e++){
-    for(int s= (e+1); s < m; s++){
-      alpha_h(s-e) += A(e,s) + B(e,s);
+  for(int e = 0; e < m - 1; e++){
+    for(int s = e + 1; s < m; s++){
+      alpha_h(s-e-1) += A(e,s) + B(e,s);
       beta_l(e) += A(e,s) + B(e,s);
     }
   }
@@ -31,7 +31,9 @@ arma::sp_mat a_upsub(const arma::vec & h, const arma::vec & lam,
   for(int e = lerank; e <= rerank; e++){
     int sta = std::max(lsrank, e+1);
     for(int s = sta; s <= rsrank; s++){
-      a(e,s) += h(s-e)*lam(e);
+      a(e,s) += h(s-e-1)*lam(e);
+      // printf("%d, ", e);
+      // printf("%d\n", s);
     }
   }
   double den = arma::accu(a);
@@ -59,7 +61,7 @@ arma::sp_mat b_upsub(const arma::vec & h, const arma::vec & lam,
   for(int e = lerank; e <= rerank; e++){
     int start = std::max(lsrank, e+1);
     for(int s = start; s <= rsrank; s++){
-      int split = h.n_rows - (rsrank- (s-e));
+      int split = h.n_rows - (rsrank- (s-e-1));
       if (split > 0) rho(0) += lam(e) * sum(h.rows(0, split - 1));
       if (split < h.n_rows) rho(1) += lam(e) * sum(h.rows(split, h.n_rows - 1));
     }
@@ -68,10 +70,12 @@ arma::sp_mat b_upsub(const arma::vec & h, const arma::vec & lam,
   //expectation
   arma::sp_mat b = arma::sp_mat(h.n_rows, h.n_rows);
   arma::sp_mat out = arma::sp_mat(h.n_rows, h.n_rows);
-  int end = std::min(rsrank, rerank);
+  int end = std::min(rsrank, rerank+1);
   for(int e=lerank; e<end; e++){
-    for(int s = rsrank + 1; s<h.n_rows; s++){
-      b(e,s) += h(s-e);
+    for(int s = rsrank+1; s<h.n_rows; s++){
+      b(e,s) += h(s-e-1);
+      // printf("%d, ", e);
+      // printf("%d\n", s);
     }
   }
   double sb = arma::accu(b);
@@ -147,14 +151,14 @@ double vpar_up(arma::vec & alpha_h, arma::vec & alpha_l,
   alpha_h.fill(0.0);
   alpha_l.fill(0.0);
   double lp = 0.0;
-  for(int e=0; e<m-1; e++){
-    //Rprintf("e %d\n", e);
-    for(int s=(e+1); s<m; s++){
-      //Rprintf("s %d\n", s);
-      alpha_h(s-e) += A(e,s) + B(e,s);
+  for(int e = 0; e < m - 1; e++){
+    for(int s = e + 1; s < m; s++){
+      // Rprintf("%d, ", e);
+      // Rprintf("%d\n", s);
+      alpha_h(s-e-1) += A(e,s) + B(e,s);
       alpha_l(e) += A(e,s) + B(e,s);
-      if(h(s-e) > 0.0){
-        lp += (A(e,s)+B(e,s))*log(h(s-e));
+      if(h(s-e-1) > 0.0){
+        lp += (A(e,s)+B(e,s))*log(h(s-e-1));
       }
       if(lam(e) > 0.0){
         lp += (A(e,s)+B(e,s))*log(lam(e));

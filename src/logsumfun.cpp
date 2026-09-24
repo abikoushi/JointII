@@ -2,7 +2,7 @@
 #include "logsumfun.h"
 
 //const double epsilon = std::numeric_limits<double>::min();
-const double epsilon = 0.0;
+const double epsilon = 1e-16;
 
 double sumxlogy(const arma::vec & x, const arma::vec & y){
   double out=0.0;

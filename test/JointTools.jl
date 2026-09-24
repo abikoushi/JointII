@@ -71,6 +71,7 @@ function aup(le_rank,re_rank,ls_rank,rs_rank,h,lam)
     start = max(ls_rank,i+1)
     for j in start:rs_rank
         a[i,j] += h[j-i] * lam[i]
+        #print(i,", ",j,"\n")
     end
   end
   a ./= sum(a)
@@ -130,6 +131,7 @@ function summingup!(α, β, A, B, h, lam)
   beta = zero(β)
   for i in 1:(m-1)
     for j in (i+1):m
+    #print(i,", ", j ,"\n")
       alpha[j-i] += A[i,j] + B[i,j]
       beta[i] += A[i,j] + B[i,j]
       if h[j-i]>0
