@@ -7,10 +7,10 @@ arma::sp_mat a_up0sub(const arma::vec & h,
                      const int & lerank, const int & rerank,
                      const int & lsrank, const int & rsrank) {
   arma::sp_mat a(h.n_rows, h.n_rows);
-  for(int e = lerank; e < rerank; e++){
-    int sta = std::max(lsrank, e+1);
-    for(int s = sta; s < rsrank; s++){
-      a(e,s) += h(s-e);
+  for(int e = lerank; e <= rerank; e++){
+    int sta = std::max(lsrank, e + 1);
+    for(int s = sta; s <= rsrank; s++){
+      a(e,s) += h(s-e-1);
     }
   }
   double den = arma::accu(a);
@@ -36,9 +36,9 @@ double par_up0(arma::vec & alpha_h,
   int m = h.n_rows;
   alpha_h.fill(0);
   double lp = 0;
-  for(int e=0; e < (m-1); e++){
-    for(int s= (e+1); s < m; s++){
-      alpha_h(s-e) += A(e,s);
+  for(int e = 0; e < m - 1; e++){
+    for(int s = e + 1; s < m; s++){
+      alpha_h(s-e-1) += A(e,s);
     }
   }
   h = alpha_h/sum(alpha_h);
@@ -80,11 +80,11 @@ double vpar_up0(arma::vec & alpha_h,
   int m = h.n_rows;
   alpha_h.fill(0.0);
   double lp = 0.0;
-  for(int e=0; e<m-1; e++){
-    for(int s=(e+1); s<m; s++){
-      alpha_h(s-e) += A(e,s);
-      if(h(s-e) > 0.0){
-        lp += A(e,s)*log(h(s-e));
+  for(int e=0; e < m - 1; e++){
+    for(int s = e + 1; s<m; s++){
+      alpha_h(s-e-1) += A(e,s);
+      if(h(s-e-1) > 0.0){
+        lp += A(e,s)*log(h(s-e-1));
       }
     }
   }

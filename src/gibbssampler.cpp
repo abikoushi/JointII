@@ -78,7 +78,7 @@ arma::sp_mat asample0(int le_rank, int re_rank,
   for(int i = le_rank; i < re_rank; ++i){
     int start = std::max(ls_rank, i + 1);
     for(int j = start; j < rs_rank; ++j){
-      a(i,j) += h[j-i];
+      a(i,j) += h[j-i-1];
     }
   }
   double den = arma::accu(a);
@@ -110,9 +110,9 @@ double par_sample0(arma::vec & alpha_h,
   double lp = 0.0;
   for(int e=0; e<m-1; e++){
     for(int s=(e+1); s<m; s++){
-      alpha_h(s-e) += A(e,s);
-      if(h(s-e) > 0.0){
-        lp += A(e,s)*log(h(s-e));
+      alpha_h(s-e-1) += A(e,s);
+      if(h(s-e-1) > 0.0){
+        lp += A(e,s)*log(h(s-e-1));
       }
     }
   }
@@ -154,10 +154,10 @@ arma::sp_mat asample(int le_rank, int re_rank,
   arma::sp_mat a(m, m);
   arma::sp_mat out(m, m);
   double den;
-  for(int i = le_rank; i <= re_rank; ++i){
+  for(int i = le_rank; i <= re_rank; i++){
     int start = std::max(ls_rank, i + 1);
-    for(int j = start; j <= rs_rank; ++j){
-      a(i,j) += h(j-i)*lam(i);
+    for(int j = start; j <= rs_rank; j++){
+      a(i,j) += h(j - i - 1)*lam(i);
     }
   }
   den = arma::accu(a);
@@ -189,7 +189,7 @@ arma::sp_mat bsample(int le_rank, int re_rank, int ls_rank, int rs_rank,
   for(int i = le_rank; i <= re_rank; ++i){
     int start = std::max(ls_rank, i + 1);
     for(int j = start; j <= rs_rank; ++j){
-      int cutoff = m - (rs_rank - (j - i));
+      int cutoff = m - (rs_rank - (j - i - 1));
       if (cutoff > 0)
         rho[0] += lam[i] * arma::sum(h.rows(0, cutoff - 1));
       if (cutoff < m)
@@ -197,9 +197,9 @@ arma::sp_mat bsample(int le_rank, int re_rank, int ls_rank, int rs_rank,
     }
   }
   rho /= arma::sum(rho);
-  for(int i = le_rank; i <= re_rank; ++i){
-    for(int j = rs_rank + 1; j < m; ++j){
-      B(i,j) += h[j - i];
+  for(int i = le_rank; i <= re_rank; i++){
+    for(int j = rs_rank + 1; j < m; j++){
+      B(i,j) += h[j - i - 1];
     }
   }
   double denb = arma::accu(B);
@@ -237,12 +237,12 @@ double par_sample(arma::vec & alpha_h,
   alpha_h.fill(0.0);
   beta_l.fill(0.0);
   double lp = 0.0;
-  for(int e=0; e < (m-1); e++){
-    for(int s=(e+1); s<m; s++){
-      alpha_h(s-e) += A(e,s) + B(e,s);
+  for(int e = 0; e < m - 1; e++){
+    for(int s = e + 1; s < m; s++){
+      alpha_h(s-e-1) += A(e,s) + B(e,s);
       beta_l(e) += A(e,s) + B(e,s);
-      if(h(s-e) > 0.0){
-        lp += (A(e,s)+B(e,s))*log(h(s-e));
+      if(h(s-e-1) > 0.0){
+        lp += (A(e,s)+B(e,s))*log(h(s-e-1));
       }
       if(lam(e) > 0.0){
         lp += (A(e,s)+B(e,s))*log(lam(e));
