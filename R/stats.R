@@ -2,9 +2,6 @@ colMarginal <- function(X){
   cumsum(colSums(X))  
 }
 
-p2ccdf <- function(p){
-  rev(cumsum(rev(p)))
-}
 
 IIdf <- function(est){
   data.frame(
