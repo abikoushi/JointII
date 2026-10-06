@@ -8,3 +8,4 @@ Description: More about what it does (maybe more than one line).
 License: MIT + LICENSE file
 Imports: Rcpp (>= 1.0.13-1), Matrix
 LinkingTo: Rcpp, RcppArmadillo
+RoxygenNote: 7.3.3

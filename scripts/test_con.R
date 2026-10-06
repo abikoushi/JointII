@@ -7,19 +7,14 @@ library(reshape2)
 library(gridExtra)
 library(ggplot2)
 library(dplyr)
+library(JuliaCall)
 #library(RColorBrewer)
 
 juliapath <- scan("path.txt", what = character())
 julia <- julia_setup(JULIA_HOME = juliapath[1])
 julia_source(juliapath[4])
+julia_source(juliapath[5])
 
-logsumexp <- function(x){
-  mx <- max(x)
-  mx + log(sum(exp(x-mx)))
-}
-
-# logsumexp(1:10)
-# log(sum(exp(1:10)))
 
 Lambda <- function(x, sigma){
   x^sigma
@@ -55,21 +50,34 @@ curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale, lower.tail =
 ####
 
 system.time({
-  est1 <- conditionalfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, 
+  est_vb <- conditionalfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, 
+                             maxit=200L, tol=1e-8, method = "VB")
+})
+
+system.time({
+  est_vb2 <- julia_call("contool.vb", simDat$LE, simDat$RE, simDat$LS, simDat$RS, 200L)
+})
+
+plot(est_vb$logprob, type = "l")
+lines(est_vb2$logprob, type = "l", col="red")
+
+plot(est_vb$breaks, prob2ccdf(est_vb$incubation), type="s", col="royalblue", xlim = c(0,40))
+lines(est_vb2$value, prob2ccdf(est_vb2$alpha/sum(est_vb2$alpha)), type="s", col="orange", xlim = c(0,40))
+curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale, lower.tail = FALSE), add=TRUE, lty=2)
+
+system.time({
+  est_em <- conditionalfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS,
                              maxit=200L, tol=1e-8, method = "EM")
 })
 
 system.time({
-  est2 <- conditionalfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS,
-                             maxit=200L, tol=1e-8, method = "VB")
+  est_em2 <- julia_call("contool.EM", simDat$LE, simDat$RE, simDat$LS, simDat$RS,200L)
 })
 
+plot(est_em$logprob[-1], type = "l")
+lines(est_em2$logprob[-1], type = "l", col="red")
 
-plot(est1$logprob[-1], type = "l")
-lines(est2$logprob[-1], type = "l")
-
-plot(est1$breaks, prob2ccdf(est1$incubation), type="s", col="royalblue", xlim = c(0,40))
-lines(est2$breaks, prob2ccdf(est2$incubation), type="s", col="forestgreen", xlim = c(0,40))
-lines(res$breaks, Fhat, col="orange", type="s")
+plot(est_vb$breaks, prob2ccdf(est_em$incubation), type="s", col="royalblue", xlim = c(0,40))
+lines(est_vb2$value, prob2ccdf(est_em2$alpha/sum(est_em2$alpha)), type="s", col="orange", xlim = c(0,40))
 curve(pweibull(x, shape = trueparam$shape, scale = trueparam$scale, lower.tail = FALSE), add=TRUE, lty=2)
 

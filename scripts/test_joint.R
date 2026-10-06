@@ -12,11 +12,7 @@ juliapath <- scan("path.txt", what = character())
 julia <- julia_setup(JULIA_HOME = juliapath[1])
 julia_source(juliapath[2])
 julia_source(juliapath[3])
-
-logsumexp <- function(x){
-  mx <- max(x)
-  mx + log(sum(exp(x-mx)))
-}
+julia_source(juliapath[4])
 
 weibull_process = function(tau, shape, maxit){
   w = numeric(maxit)
@@ -38,6 +34,7 @@ weibull_process = function(tau, shape, maxit){
 Lambda <- function(x, sigma){
   x^sigma
 }
+
 simDIC <- function(y,at,WS,WE){
   S <- at+y
   ue = runif(length(at))
