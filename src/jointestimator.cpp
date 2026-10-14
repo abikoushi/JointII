@@ -71,9 +71,9 @@ arma::sp_mat b_upsub(const arma::vec & h, const arma::vec & lam,
   arma::sp_mat b = arma::sp_mat(h.n_rows, h.n_rows);
   arma::sp_mat out = arma::sp_mat(h.n_rows, h.n_rows);
   int end = std::min(rsrank, rerank+1);
-  for(int e=lerank; e<end; e++){
-    for(int s = rsrank+1; s<h.n_rows; s++){
-      b(e,s) += h(s-e-1);
+  for(int e = lerank; e < end; e++){
+    for(int s = rsrank + 1; s < h.n_rows; s++){
+      b(e,s) += h(s - e - 1);
       // printf("%d, ", e);
       // printf("%d\n", s);
     }

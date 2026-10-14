@@ -12,39 +12,12 @@ juliapath <- scan("path.txt", what = character())
 julia <- julia_setup(JULIA_HOME = juliapath[1])
 julia_source(juliapath[2])
 julia_source(juliapath[3])
-julia_source(juliapath[4])
 
-weibull_process = function(tau, shape, maxit){
-  w = numeric(maxit)
-  z = runif(1)
-  at =  (-log(z))^(1/shape) 
-  if(maxit >= 2){
-    for(i in 1:maxit){
-      z = runif(1)
-      at =  (-log(z) + at^shape)^(1/shape)
-      w[i] = at
-      if(at>tau){
-        break
-      }
-    }    
-  }
-  return(w[1:i])
-}
 
 Lambda <- function(x, sigma){
   x^sigma
 }
 
-simDIC <- function(y,at,WS,WE){
-  S <- at+y
-  ue = runif(length(at))
-  us = runif(length(at))
-  LE = pmax(0, at - WE * (1 - ue))
-  LS = pmax(LE, S - WS * (1 - us))
-  RS = S + WS * us
-  RE = pmin(RS, at + WE * ue)
-  data.frame(LE,LS,RE,RS)  
-}
 
 trueparam <- list(shape=1.5, scale=10)
 sigma <- 1.0
@@ -74,6 +47,8 @@ lines(res2$logprob, type = "l", col="cornflowerblue")
 
 Shat = rowMeans(1-apply(res$incubation[,-burnin],2,cumsum))
 Shat2 = colMeans(res2$ccdf[-burnin,])
+
+
 
 plot(res$breaks, Shat, type="s", col="royalblue", xlim = c(0,100))
 lines(res2$value, Shat2, type="s", col="orange", xlim = c(0,100))
