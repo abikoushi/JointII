@@ -75,9 +75,9 @@ arma::sp_mat asample0(int le_rank, int re_rank,
   int m = h.n_elem;
   arma::sp_mat a(m, m);
   arma::sp_mat out(m, m);
-  for(int i = le_rank; i < re_rank; ++i){
+  for(int i = le_rank; i <= re_rank; ++i){
     int start = std::max(ls_rank, i + 1);
-    for(int j = start; j < rs_rank; ++j){
+    for(int j = start; j <= rs_rank; ++j){
       a(i,j) += h[j-i-1];
     }
   }
@@ -109,7 +109,7 @@ double par_sample0(arma::vec & alpha_h,
   alpha_h.fill(0.0);
   double lp = 0.0;
   for(int e=0; e<m-1; e++){
-    for(int s=(e+1); s<m; s++){
+    for(int s = e + 1; s < m; s++){
       alpha_h(s-e-1) += A(e,s);
       if(h(s-e-1) > 0.0){
         lp += A(e,s)*log(h(s-e-1));

@@ -31,7 +31,7 @@ simDat0 <- simDIC(y, at = at, WS = 1, WE = 1)
 simDat <- simDat0
 
 system.time({
-  res <- conditional_dic_gibbs(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS,
+  res <- conditional_dic_gibbs(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS, RS =  simDat$RS,
                                maxit=2000L)
 })
 

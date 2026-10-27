@@ -35,7 +35,7 @@ WS=1
 simDat0 <- simDIC(y, at = at, WS = 1, WE = 1)
 simDat <- simDat0[simDat0$RS < tau,]
 system.time({
-  res <- joint_dic_gibbs(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
+  res <- joint_dic_gibbs(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS, RS =  simDat$RS, tau = tau,
                          iter=2000L)
 })
 
