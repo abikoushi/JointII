@@ -3,8 +3,8 @@ Type: Package
 Title: Joint Estimation Incubation period and Infection
 Version: 0.1
 Author: Ko Abe
-Maintainer: Ko Abe <yourfault@somewhere.net>
-Description: More about what it does (maybe more than one line).
+Maintainer: Ko Abe <a.b.e.k.o.69@gmail.com>
+Description: Empirical joint estimation for incubation period and infection under the doubly interval-censored with right truncated observation.
 License: MIT + LICENSE file
 Imports: Rcpp (>= 1.0.13-1), Matrix
 LinkingTo: Rcpp, RcppArmadillo
