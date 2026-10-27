@@ -2,6 +2,8 @@
 
 R package of empirical joint estimation for incubation period and infection under the doubly interval-censored with right truncated observation.
 
+This package rewrites, using Rcpp, an algorithm that was originally implemented in Julia in Abe & Sakumura (2026; https://github.com/abikoushi/JointDoublyIntervalCensored).
+
 ## Install
 
 ```r

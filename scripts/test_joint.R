@@ -84,7 +84,7 @@ lines(est_vb2$value, cumsum(est_vb2$beta), type="s", col="red")
 
 
 system.time({
-  est_em <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS,　RS =  simDat$RS, tau = tau,
+  est_em <- jointfit_dic(LE = simDat$LE, RE = simDat$RE, LS = simDat$LS, RS =  simDat$RS, tau = tau,
                       maxit=1000L, tol=1e-8, method = "EM")
 })
 system.time({

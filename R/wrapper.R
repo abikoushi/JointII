@@ -157,12 +157,12 @@ conditionalfit_dic <- function(LE, RE, LS, RS,
 #'   \code{\link{jointfit_dic}}, \code{\link{joint_dic_gibbs}}
 #'
 #' @export
-conditional_dic_gibbs <- function(LE, RE, LS, RS, maxit=1000L){
+conditional_dic_gibbs <- function(LE, RE, LS, RS, iter=1000L){
   breaks <- setbreaks(LE, RE, LS, RS)
   RANK <- rankbreaks(LE, RE, LS, RS, breaks)
   res <- with(RANK, conditional_DIC_gibbs(LE-1L, RE-1L, LS-1L, RS-1L, 
                                           m = length(breaks),
-                                          iter = maxit))
+                                          iter = iter))
   res$breaks <- breaks
   return(res)
 }
