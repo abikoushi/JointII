@@ -8,4 +8,5 @@ Description: Empirical joint estimation for incubation period and infection unde
 License: MIT + LICENSE file
 Imports: Rcpp (>= 1.0.13-1), Matrix
 LinkingTo: Rcpp, RcppArmadillo
+Encoding: UTF-8
 RoxygenNote: 7.3.3

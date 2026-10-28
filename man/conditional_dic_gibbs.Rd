@@ -4,7 +4,7 @@
 \alias{conditional_dic_gibbs}
 \title{Fit a Conditional Model Using Gibbs Sampling}
 \usage{
-conditional_dic_gibbs(LE, RE, LS, RS, maxit = 1000L)
+conditional_dic_gibbs(LE, RE, LS, RS, iter = 1000L)
 }
 \arguments{
 \item{LE}{A numeric vector of left endpoints for the first set
